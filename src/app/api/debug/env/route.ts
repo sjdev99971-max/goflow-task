@@ -12,10 +12,10 @@ export async function GET(req: NextRequest) {
   const db = process.env.DATABASE_URL || ''
   return NextResponse.json({
     BOT_TOKEN_set: !!bt,
-    BOT_TOKEN_prefix: bt ? bt.substring(0, 12) : '',
+    BOT_TOKEN_prefix: bt ? bt.substring(0, 15) : '',
     BOT_TOKEN_suffix: bt ? bt.substring(bt.length - 4) : '',
     DATABASE_URL_set: !!db,
-    DATABASE_URL_prefix: db ? db.substring(0, 30) : '',
+    DATABASE_URL_prefix: db ? db.substring(0, 35) : '',
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || '<not set>',
     BOT_USERNAME: process.env.BOT_USERNAME || '<not set>',
     NODE_ENV: process.env.NODE_ENV,
