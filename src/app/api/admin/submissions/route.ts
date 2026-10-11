@@ -7,7 +7,6 @@ import { getSetting } from '@/lib/settings'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// GET: list submissions (pending by default)
 export async function GET(req: NextRequest) {
   const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ ok: false }, { status: 403 })
@@ -35,19 +34,25 @@ export async function GET(req: NextRequest) {
       proof: s.proof,
       reward: s.reward,
       status: s.status,
+      escalated: s.escalated,
+      rejectReason: s.rejectReason,
       createdAt: s.createdAt
     }))
   })
 }
 
-// POST: approve/reject submission
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ ok: false }, { status: 403 })
 
-  const { submissionId, action } = await req.json()
+  const { submissionId, action, reason } = await req.json()
   if (!submissionId || !['approve', 'reject'].includes(action)) {
     return NextResponse.json({ ok: false, error: 'invalid' }, { status: 400 })
+  }
+
+  // ⚠️ Reject এর জন্য reason MUST
+  if (action === 'reject' && (!reason || !reason.trim())) {
+    return NextResponse.json({ ok: false, error: 'reason_required' }, { status: 400 })
   }
 
   const sub = await prisma.taskCompletion.findUnique({
@@ -58,7 +63,6 @@ export async function POST(req: NextRequest) {
   if (sub.status !== 'pending') return NextResponse.json({ ok: false, error: 'already_processed' })
 
   if (action === 'approve') {
-    // 🔥 CRITICAL: Add money to user's balance + referral commission
     await prisma.$transaction([
       prisma.taskCompletion.update({
         where: { id: submissionId },
@@ -73,24 +77,19 @@ export async function POST(req: NextRequest) {
       })
     ])
 
-    // Referral commission
     if (sub.user.referrerId) {
       const pct = parseFloat(await getSetting('referral_percent')) || 10
       const comm = +(sub.reward * pct / 100).toFixed(4)
       await prisma.user.update({
         where: { id: sub.user.referrerId },
-        data: {
-          mainBalance: { increment: comm },
-          totalEarned: { increment: comm }
-        }
+        data: { mainBalance: { increment: comm }, totalEarned: { increment: comm } }
       })
     }
 
-    // Notify user
     try {
       await tg('sendMessage', {
         chat_id: sub.user.telegramId.toString(),
-        text: `✅ <b>Task Approved!</b>\n\n📌 ${sub.task.title}\n💰 <b>+$${sub.reward.toFixed(4)}</b> added to your balance`,
+        text: `✅ <b>Task Approved!</b>\n\n📌 ${sub.task.title}\n💰 <b>+$${sub.reward.toFixed(4)}</b> balance এ যোগ হয়েছে`,
         parse_mode: 'HTML'
       })
     } catch {}
@@ -98,16 +97,37 @@ export async function POST(req: NextRequest) {
   } else {
     await prisma.taskCompletion.update({
       where: { id: submissionId },
-      data: { status: 'rejected', reviewedBy: admin.telegramId }
+      data: {
+        status: 'rejected',
+        reviewedBy: admin.telegramId,
+        rejectedBy: admin.telegramId,
+        rejectReason: reason.trim()
+      }
     })
 
     try {
       await tg('sendMessage', {
         chat_id: sub.user.telegramId.toString(),
-        text: `❌ <b>Task Rejected</b>\n\n📌 ${sub.task.title}\n\nসঠিক proof দিয়ে আবার submit করুন।`,
+        text: `❌ <b>Task Rejected</b>\n\n📌 ${sub.task.title}\n\n📝 <b>Reason:</b> ${reason.trim()}\n\nসঠিক ভাবে আবার try করুন।`,
         parse_mode: 'HTML'
       })
     } catch {}
+
+    // Notify ALL admins about rejection (audit trail)
+    const allAdmins = await prisma.user.findMany({
+      where: { isAdmin: true },
+      select: { telegramId: true }
+    })
+    for (const a of allAdmins) {
+      if (a.telegramId.toString() === admin.telegramId.toString()) continue
+      try {
+        await tg('sendMessage', {
+          chat_id: a.telegramId.toString(),
+          text: `🚫 <b>Rejection Log</b>\n\n👤 ${sub.user.firstName}\n📌 ${sub.task.title}\n❌ By @${admin.username || 'admin'}\n📝 ${reason.trim()}`,
+          parse_mode: 'HTML'
+        })
+      } catch {}
+    }
   }
 
   return NextResponse.json({ ok: true })

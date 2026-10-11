@@ -22,8 +22,10 @@ async function getMainMenu(botUsername: string) {
   return {
     inline_keyboard: [
       [{ text: '🚀 Open App', web_app: { url: `${webAppUrl}/app` } }],
-      [{ text: '💸 Earnings', web_app: { url: `${webAppUrl}/app?tab=earnings` } }],
-      [{ text: '🕐 Leaderboard', web_app: { url: `${webAppUrl}/app?tab=leaderboard` } }],
+      [{ text: '💸 Earnings', web_app: { url: `${webAppUrl}/app?tab=tasks` } }],
+      [{ text: '🚀 Promote Now', web_app: { url: `${webAppUrl}/app?page=promote` } }],
+      [{ text: '👭 Refer & Earn', web_app: { url: `${webAppUrl}/app?tab=rank` } }],
+      [{ text: '📤 Withdraw', web_app: { url: `${webAppUrl}/app?page=withdraw` } }],
       [{ text: '🖇️ 24/7 Support', url: `https://t.me/${await getSetting('support_username')}` }]
     ]
   }

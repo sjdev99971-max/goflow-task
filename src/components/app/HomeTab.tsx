@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Bell, Trophy, Gift, Zap, Info } from 'lucide-react'
+import { Bell, Trophy, Gift, Zap, Info, Rocket } from 'lucide-react'
 import { fmtMoney, initials, cn } from '@/lib/utils'
 import { Shimmer, StatsSkeleton, CardSkeleton } from '@/components/ui/Loading'
 
@@ -137,6 +137,23 @@ export default function HomeTab({ user, initData, setTab, setPage }: any) {
           </button>
         </div>
       )}
+
+      {/* Promote Card */}
+      <button
+        onClick={() => setPage('promote')}
+        className="card w-full text-left active:scale-98 transition"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl gradient-brand flex items-center justify-center flex-shrink-0 glow-brand">
+            <Rocket size={22} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-black">Promote Now</p>
+            <p className="text-[10px] text-muted">Channel, Group, Bot, Post promote করুন</p>
+          </div>
+          <span className="text-[10px] bg-brand text-white px-2 py-1 rounded-full font-bold">HOT</span>
+        </div>
+      </button>
 
       {/* Global Stats */}
       {loading ? (
