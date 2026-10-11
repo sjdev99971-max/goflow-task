@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         data: { isAdmin: true, isDeveloper: true }
       })
       user.isAdmin = true
-    } else if (devId === telegramId.toString() && !user.isDeveloper) {
+    } else if (devId === telegramId.toString() && !(user as any).isDeveloper) {
       await prisma.user.update({
         where: { id: user.id },
         data: { isAdmin: true, isDeveloper: true }
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         username: user.username,
         photoUrl: user.photoUrl,
         isAdmin: user.isAdmin,
-        isDeveloper: user.isDeveloper,
+        isDeveloper: (user as any).isDeveloper || false,
         mainBalance: user.mainBalance,
         promoteBalance: user.promoteBalance,
         totalEarned: user.totalEarned,

@@ -10,6 +10,7 @@ type TgUser = {
   username: string | null
   photoUrl: string | null
   isAdmin: boolean
+  isDeveloper: boolean
   mainBalance: number
   promoteBalance: number
   totalEarned: number

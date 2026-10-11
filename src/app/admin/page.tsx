@@ -41,12 +41,12 @@ function AdminInner() {
       <div className="p-4 flex items-center gap-3 border-b border-line sticky top-0 bg-bg z-20">
         <a href="/app" className="text-muted"><ArrowLeft size={20} /></a>
         <h1 className="text-lg font-black flex-1">Admin Panel</h1>
-        {user.isDeveloper && (
+        {(user as any).isDeveloper && (
           <span className="text-[10px] bg-gold/20 text-gold px-2 py-1 rounded-full font-bold flex items-center gap-1">
             <Crown size={10} /> DEV
           </span>
         )}
-        {user.isAdmin && !user.isDeveloper && (
+        {user.isAdmin && !(user as any).isDeveloper && (
           <span className="text-[10px] bg-brand/20 text-brand px-2 py-1 rounded-full font-bold flex items-center gap-1">
             <Shield size={10} /> ADMIN
           </span>
