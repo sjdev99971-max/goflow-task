@@ -56,7 +56,7 @@ function AppInner() {
           {page === 'accounts' && <LinkAccountsPage user={user} initData={initData} onBack={goBack} />}
           {page === 'history' && <HistoryPage initData={initData} onBack={goBack} />}
           {page === 'rewards' && <RewardsPage user={user} initData={initData} onBack={goBack} />}
-          {page === 'settings' && <SettingsPage user={user} initData={initData} onBack={goBack} />}
+          {page === 'settings' && <SettingsPage user={user} initData={initData} onBack={goBack} setPage={setPage} />}
           {page === 'skills' && <SkillsPage user={user} initData={initData} onBack={goBack} />}
           {page === 'notifications' && <NotificationsPage initData={initData} onBack={goBack} />}
         </div>

@@ -154,27 +154,34 @@ export default function ProfileTab({ user, initData, setPage }: any) {
       </a>
 
       {/* Footer */}
-<div className="text-center pt-2 pb-4 space-y-1.5">
-  <p className="text-[10px] text-dim">GoFlow · v1.0.0</p>
-  <p className="text-[11px] font-bold">
-    <span className="text-muted">Developed by </span>
-    <TypingText
-      text="Mohammad JAHID"
-      speed={100}
-      startDelay={300}
-      className="text-brand"
-    />
-  </p>
-  <a
-    href="https://t.me/DEVELOPER_JAHID_BHAI"
-    target="_blank"
-    rel="noreferrer"
-    className="inline-flex items-center gap-1 text-[10px] text-brand font-semibold active:opacity-70"
-  >
-    <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-    @DEVELOPER_JAHID_BHAI
-  </a>
-</div>
+      <div className="text-center pt-4 pb-6 space-y-2 animate-fade-in">
+        <div className="inline-block px-4 py-2 rounded-2xl bg-gradient-to-br from-brand/10 to-brand/5 border border-brand/20">
+          <p className="text-[10px] text-muted tracking-[0.2em] uppercase font-bold">Developed by</p>
+          <p className="text-sm mt-1">
+            <TypingText
+              text="Mohammad JAHID"
+              speed={130}
+              startDelay={400}
+              className="text-base"
+              loop
+            />
+          </p>
+          <a
+            href="https://t.me/DEVELOPER_JAHID_BHAI"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-[11px] font-black mt-1 active:scale-95 transition"
+            style={{
+              color: '#ff8c42',
+              textShadow: '0 0 10px rgba(255,107,26,0.5)'
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse shadow-[0_0_8px_#ff6b1a]" />
+            @DEVELOPER_JAHID_BHAI
+          </a>
+        </div>
+        <p className="text-[9px] text-dim tracking-widest uppercase">GoFlow · v1.0.0</p>
+      </div>
     </div>
   )
 }
