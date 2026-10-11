@@ -98,7 +98,7 @@ function UsersTab({ initData }: any) {
     fetch(`/api/admin/users?q=${encodeURIComponent(q)}`, { headers: { 'x-init-data': initData } })
       .then(r => r.json()).then(d => d.ok && setUsers(d.users))
   }
-  useEffect(load, [initData])
+  useEffect(() => { load() }, [initData])
 
   const act = async (action: string, amount?: number) => {
     await fetch('/api/admin/users', {
@@ -168,7 +168,7 @@ function TasksTab({ initData }: any) {
   const [form, setForm] = useState({ type: 'join_chat', title: '', link: '', reward: '', adminCut: '', verifyType: 'manual' })
 
   const load = () => fetch('/api/admin/tasks', { headers: { 'x-init-data': initData } }).then(r => r.json()).then(d => d.ok && setTasks(d.tasks))
-  useEffect(load, [initData])
+  useEffect(() => { load() }, [initData])
 
   const create = async () => {
     await fetch('/api/admin/tasks', {
@@ -243,7 +243,7 @@ function TasksTab({ initData }: any) {
 function WdTab({ initData }: any) {
   const [list, setList] = useState<any[]>([])
   const load = () => fetch('/api/admin/withdrawals', { headers: { 'x-init-data': initData } }).then(r => r.json()).then(d => d.ok && setList(d.withdrawals))
-  useEffect(load, [initData])
+  useEffect(() => { load() }, [initData])
 
   const act = async (id: number, action: string) => {
     await fetch('/api/admin/withdrawals', {
