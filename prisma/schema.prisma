@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              BigInt   @id @default(autoincrement())
+  telegramId      BigInt   @unique
+  username        String?
+  firstName       String?
+  lastName        String?
+  photoUrl        String?
+  languageCode    String?
+
+  isAdmin         Boolean  @default(false)
+  isBanned        Boolean  @default(false)
+
+  mainBalance     Float    @default(0)
+  promoteBalance  Float    @default(0)
+  totalEarned     Float    @default(0)
+  totalWithdrawn  Float    @default(0)
+
+  referrerId      BigInt?
+  referrer        User?    @relation("Referrals", fields: [referrerId], references: [id])
+  referrals       User[]   @relation("Referrals")
+  totalReferrals  Int      @default(0)
+
+  taskCompletions TaskCompletion[]
+  withdrawals     Withdrawal[]
+  promotes        Promote[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([referrerId])
+  @@index([totalEarned])
+  @@index([totalReferrals])
+  @@index([telegramId])
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  type        String
+  title       String
+  description String?
+  link        String
+  reward      Float
+  adminCut    Float    @default(0)
+  verifyType  String   @default("manual")
+  isActive    Boolean  @default(true)
+
+  completions TaskCompletion[]
+
+  createdAt   DateTime @default(now())
+  @@index([type, isActive])
+}
+
+model TaskCompletion {
+  id         Int      @id @default(autoincrement())
+  userId     BigInt
+  taskId     Int
+  status     String   @default("pending")
+  proof      String?
+  reward     Float
+  adminCut   Float    @default(0)
+  reviewedBy BigInt?
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, taskId])
+  @@index([status])
+}
+
+model Withdrawal {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  amount    Float
+  method    String
+  address   String
+  status    String   @default("pending")
+  note      String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([userId])
+}
+
+model Promote {
+  id          Int      @id @default(autoincrement())
+  userId      BigInt
+  type        String
+  link        String
+  amount      Float
+  commission  Float
+  status      String   @default("pending")
+  note        String?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+}
+
+model Setting {
+  key   String @id
+  value String
+}
