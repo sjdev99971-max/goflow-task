@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { ChevronRight, Wallet, Settings, Gift, Shield, ArrowLeft } from 'lucide-react'
 import { fmtMoney, initials, cn } from '@/lib/utils'
+import TypingText from '@/components/ui/TypingText'
 
 export default function ProfileTab({ user, initData, setPage }: any) {
   const [mode, setMode] = useState<'main' | 'withdraw' | 'convert'>('main')
@@ -152,7 +153,28 @@ export default function ProfileTab({ user, initData, setPage }: any) {
         🖇️ 24/7 Support
       </a>
 
-      <p className="text-center text-[10px] text-dim">GoFlow · v1.0.0 · By SHANTO</p>
+      {/* Footer */}
+<div className="text-center pt-2 pb-4 space-y-1.5">
+  <p className="text-[10px] text-dim">GoFlow · v1.0.0</p>
+  <p className="text-[11px] font-bold">
+    <span className="text-muted">Developed by </span>
+    <TypingText
+      text="Mohammad JAHID"
+      speed={100}
+      startDelay={300}
+      className="text-brand"
+    />
+  </p>
+  <a
+    href="https://t.me/DEVELOPER_JAHID_BHAI"
+    target="_blank"
+    rel="noreferrer"
+    className="inline-flex items-center gap-1 text-[10px] text-brand font-semibold active:opacity-70"
+  >
+    <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
+    @DEVELOPER_JAHID_BHAI
+  </a>
+</div>
     </div>
   )
 }
