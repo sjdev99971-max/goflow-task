@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Copy, Share2, Trophy, Users, TrendingUp } from 'lucide-react'
 import { cn, fmtMoney } from '@/lib/utils'
+import { RankSkeleton, Shimmer, StatsSkeleton } from '@/components/ui/Loading'
 
 export default function RankTab({ user, initData }: any) {
   const [tab, setTab] = useState('tasks')
@@ -33,6 +34,7 @@ export default function RankTab({ user, initData }: any) {
   }
 
   const rows = tab === 'tasks' ? earners : referrers
+  const loading = earners.length === 0 && referrers.length === 0
 
   return (
     <div className="p-4 space-y-3">
@@ -125,7 +127,8 @@ export default function RankTab({ user, initData }: any) {
       </div>
 
       {/* Top List */}
-      <div className="space-y-2">
+      {loading ? <RankSkeleton /> : (
+      <div className="space-y-2 animate-fade-in">
         {rows.map((r, i) => (
           <div key={i} className="card flex items-center gap-3 py-3">
             <div className="text-center min-w-[36px]">
@@ -155,6 +158,7 @@ export default function RankTab({ user, initData }: any) {
           </div>
         ))}
       </div>
+      )}
     </div>
   )
 }

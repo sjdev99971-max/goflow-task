@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/Loading'
 
 export default function HistoryPage({ initData, onBack }: any) {
   const [items, setItems] = useState<any[]>([])
@@ -21,11 +22,11 @@ export default function HistoryPage({ initData, onBack }: any) {
       <h1 className="text-2xl font-black">Task History</h1>
 
       {loading ? (
-        <div className="text-center py-8 text-muted text-sm">Loading...</div>
+        <ListSkeleton count={6} />
       ) : items.length === 0 ? (
         <div className="card text-center py-12 text-muted text-sm">এখনো কোনো history নেই</div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 animate-fade-in">
           {items.map(item => (
             <div key={item.id} className="card flex items-center gap-3 py-3">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center ${

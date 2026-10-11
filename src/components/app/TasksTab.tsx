@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Search, ChevronDown, ArrowLeft, CheckCircle2, Clock } from 'lucide-react'
 import { cn, fmtMoney } from '@/lib/utils'
+import { TaskSkeleton, Shimmer } from '@/components/ui/Loading'
 
 const CATEGORIES = [
   { key: 'all', label: 'ALL', icon: '🌐' },
@@ -106,7 +107,12 @@ export default function TasksTab({ initData, setPage }: any) {
 
       {/* Tasks */}
       {loading ? (
-        <div className="text-center py-8 text-muted text-sm">Loading tasks...</div>
+        <div className="space-y-2">
+          <TaskSkeleton />
+          <TaskSkeleton />
+          <TaskSkeleton />
+          <TaskSkeleton />
+        </div>
       ) : filtered.length === 0 ? (
         <div className="card text-center py-10 text-muted text-sm">No tasks available</div>
       ) : (
@@ -162,7 +168,29 @@ function TaskDetail({ task, initData, onBack }: any) {
   const [proof, setProof] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [accounts, setAccounts] = useState<any[]>([])
   const reward = +(task.reward * (1 - (task.adminCut || 0) / 100)).toFixed(4)
+
+  useEffect(() => {
+    fetch('/api/user/accounts', { headers: { 'x-init-data': initData } })
+      .then(r => r.json()).then(d => d.ok && setAccounts(d.accounts || []))
+  }, [initData])
+
+  // Suggest account based on task type
+  const suggestPlatform = () => {
+    const map: any = {
+      join_chat: null, bot: null,
+      view_post: 'google',
+      micro: 'github',
+      x: 'twitter',
+      tiktok: 'tiktok',
+      youtube: 'youtube',
+      instagram: 'instagram'
+    }
+    return map[task.type]
+  }
+
+  const suggested = accounts.find(a => a.platform === suggestPlatform())
 
   const submit = async () => {
     if (!proof) return
@@ -174,7 +202,7 @@ function TaskDetail({ task, initData, onBack }: any) {
     })
     const d = await res.json()
     setBusy(false)
-    if (d.ok) { setMsg('✅ Submitted! Admin approve করলে credit পাবেন।') }
+    if (d.ok) setMsg('✅ Submitted! Admin approve করলে credit পাবেন।')
     else setMsg('❌ ' + (d.error || 'Failed'))
   }
 
@@ -208,12 +236,43 @@ function TaskDetail({ task, initData, onBack }: any) {
             <p className="text-xs text-muted text-center">Auto verification — link খুললেই হবে</p>
           ) : (
             <>
-              <label className="text-xs text-muted">📸 Proof (screenshot URL)</label>
+              <label className="text-xs text-muted font-bold">📸 Proof (username / screenshot URL)</label>
+
+              {suggested && (
+                <div className="mt-2 bg-brand/10 border border-brand/30 rounded-xl p-3">
+                  <p className="text-[10px] text-brand font-bold mb-1">✨ Suggested from saved accounts</p>
+                  <button
+                    onClick={() => setProof(suggested.username)}
+                    className="w-full flex items-center justify-between bg-bg-card border border-line rounded-lg px-3 py-2 active:scale-95 transition"
+                  >
+                    <span className="text-xs font-mono truncate">{suggested.username}</span>
+                    <span className="text-[10px] bg-brand text-white px-2 py-0.5 rounded-full font-bold">USE</span>
+                  </button>
+                </div>
+              )}
+
+              {!suggested && suggestPlatform() && (
+                <div className="mt-2 bg-bg-soft border border-line rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-muted mb-1">
+                    এই task এর জন্য {suggestPlatform()} account save করুন
+                  </p>
+                  <button
+                    onClick={() => {
+                      onBack()
+                      // Navigate to accounts — parent should handle
+                    }}
+                    className="text-[10px] text-brand font-bold"
+                  >
+                    → Go to Account Management
+                  </button>
+                </div>
+              )}
+
               <input
                 value={proof}
                 onChange={e => setProof(e.target.value)}
-                placeholder="Paste screenshot URL or username"
-                className="w-full bg-bg-soft border border-line rounded-xl px-3 py-2.5 mt-1 text-sm"
+                placeholder="Paste username or screenshot URL"
+                className="w-full bg-bg-soft border border-line rounded-xl px-3 py-2.5 mt-2 text-sm focus:outline-none focus:border-brand"
               />
               <button onClick={submit} disabled={busy || !proof} className="btn btn-brand w-full mt-3">
                 {busy ? 'Submitting...' : 'Submit Proof'}

@@ -32,6 +32,7 @@ model User {
   taskCompletions TaskCompletion[]
   withdrawals     Withdrawal[]
   promotes        Promote[]
+  accounts        UserAccount[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -118,4 +119,22 @@ model Promote {
 model Setting {
   key   String @id
   value String
+}
+
+model UserAccount {
+  id         Int      @id @default(autoincrement())
+  userId     BigInt
+  platform   String   // google, github, twitter, youtube, tiktok, instagram
+  username   String
+  email      String?
+  profileUrl String?
+  isVerified Boolean  @default(false)
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, platform])
+  @@index([userId])
 }
