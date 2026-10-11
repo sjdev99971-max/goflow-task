@@ -16,7 +16,9 @@ const config: Config = {
       },
       fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'] },
       boxShadow: {
-        brand: '0 8px 24px rgba(255,107,26,0.25)',
+        brand: '0 8px 24px rgba(255,107,26,0.35)',
+        glow: '0 0 20px rgba(255,107,26,0.5)',
+        'glow-lg': '0 0 40px rgba(255,107,26,0.4)',
         card: '0 4px 12px rgba(0,0,0,0.4)'
       },
       keyframes: {
@@ -30,11 +32,16 @@ const config: Config = {
         'scale-in': {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' }
+        },
+        glow: {
+          '0%, 100%': { boxShadow: '0 0 12px rgba(255,107,26,0.5)' },
+          '50%': { boxShadow: '0 0 24px rgba(255,107,26,0.9)' }
         }
       },
       animation: {
         'fade-in': 'fade-in 0.25s ease-out',
-        'scale-in': 'scale-in 0.2s ease-out'
+        'scale-in': 'scale-in 0.2s ease-out',
+        'glow': 'glow 2s ease-in-out infinite'
       }
     }
   },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { validateInitData, isRecentAuth } from '@/lib/telegram'
+import { getSetting, setSetting } from '@/lib/settings'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -67,6 +68,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'banned' }, { status: 403 })
     }
 
+    // Auto-assign Developer (first user) or ensure existing dev has flags
+    const devId = await getSetting('developer_id')
+    if (!devId) {
+      await setSetting('developer_id', telegramId.toString())
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { isAdmin: true, isDeveloper: true }
+      })
+      user.isAdmin = true
+    } else if (devId === telegramId.toString() && !user.isDeveloper) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { isAdmin: true, isDeveloper: true }
+      })
+      user.isAdmin = true
+    }
+
     return NextResponse.json({
       ok: true,
       user: {
@@ -77,6 +95,7 @@ export async function POST(req: NextRequest) {
         username: user.username,
         photoUrl: user.photoUrl,
         isAdmin: user.isAdmin,
+        isDeveloper: user.isDeveloper,
         mainBalance: user.mainBalance,
         promoteBalance: user.promoteBalance,
         totalEarned: user.totalEarned,

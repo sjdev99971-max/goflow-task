@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { ArrowUpRight, ArrowDownLeft } from 'lucide-react'
-import { ListSkeleton, Shimmer } from '@/components/ui/Loading'
+import { ListSkeleton, Shimmer, StatsPairSkeleton } from '@/components/ui/Loading'
 import { cn } from '@/lib/utils'
 
 export default function ActivityTab({ initData }: any) {
@@ -35,7 +35,7 @@ export default function ActivityTab({ initData }: any) {
       <h1 className="text-2xl font-black pt-2">Activity</h1>
 
       {loading ? (
-        <StatsSkeleton2 />
+        <StatsPairSkeleton />
       ) : (
         <div className="grid grid-cols-2 gap-2 animate-fade-in">
           <div className="card-soft">
@@ -107,15 +107,3 @@ export default function ActivityTab({ initData }: any) {
   )
 }
 
-function StatsSkeleton2() {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {[1, 2].map(i => (
-        <div key={i} className="card-soft space-y-2">
-          <Shimmer className="h-3 w-16" />
-          <Shimmer className="h-6 w-20" />
-        </div>
-      ))}
-    </div>
-  )
-}

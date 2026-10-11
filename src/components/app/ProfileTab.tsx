@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { ChevronRight, Wallet, Settings, Gift, Shield, ArrowLeft } from 'lucide-react'
+import { ChevronRight, Wallet, Settings, Gift, Shield, ArrowLeft, Users } from 'lucide-react'
 import { fmtMoney, initials, cn } from '@/lib/utils'
 import TypingText from '@/components/ui/TypingText'
 
@@ -136,6 +136,7 @@ export default function ProfileTab({ user, initData, setPage }: any) {
       {/* Menu */}
       <div className="card-soft divide-y divide-line">
         <MenuItem icon={<Gift size={16} className="text-brand" />} label="Rewards" onClick={() => setPage('rewards')} />
+        <MenuItem icon={<Users size={16} className="text-brand" />} label="Account Management" onClick={() => setPage('accounts')} />
         <MenuItem icon={<Wallet size={16} className="text-brand" />} label="Main → Promote" onClick={() => setMode('convert')} />
         <MenuItem icon={<Shield size={16} className="text-green" />} label="Skills Verification" onClick={() => setPage('skills')} />
         <MenuItem icon={<Settings size={16} className="text-brand" />} label="Settings" onClick={() => setPage('settings')} />
