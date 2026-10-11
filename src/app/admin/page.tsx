@@ -17,14 +17,14 @@ function AdminInner() {
   const { user, loading, initData } = useTelegram()
   const [tab, setTab] = useState('dash')
 
-  if (loading) return <div className="p-6 text-center text-tg-muted">Loading...</div>
+  if (loading) return <div className="p-6 text-center text-muted">Loading...</div>
   if (!user) return <div className="p-6 text-center">Auth failed</div>
   if (!user.isAdmin) return <div className="p-6 text-center text-red-400">❌ Admin access only</div>
 
   return (
     <div className="pb-24 max-w-lg mx-auto">
-      <div className="p-4 flex items-center gap-3 border-b border-tg-border sticky top-0 bg-tg-bg z-10">
-        <a href="/app" className="text-tg-muted"><ArrowLeft size={20} /></a>
+      <div className="p-4 flex items-center gap-3 border-b border-line sticky top-0 bg-bg z-10">
+        <a href="/app" className="text-muted"><ArrowLeft size={20} /></a>
         <h1 className="text-xl font-bold">🛠️ Admin Panel</h1>
       </div>
 
@@ -34,7 +34,7 @@ function AdminInner() {
       {tab === 'withdrawals' && <WdTab initData={initData} />}
       {tab === 'settings' && <SettingsTab initData={initData} />}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-tg-card/95 backdrop-blur border-t border-tg-border max-w-lg mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 bg-bg-card/95 backdrop-blur border-t border-line max-w-lg mx-auto">
         <div className="flex justify-around py-2">
           {[
             { id: 'dash', icon: LayoutDashboard, label: 'Dash' },
@@ -47,8 +47,8 @@ function AdminInner() {
             const active = tab === it.id
             return (
               <button key={it.id} onClick={() => setTab(it.id)} className="flex flex-col items-center gap-0.5 px-3 py-1">
-                <I size={20} className={active ? 'text-tg-primary' : 'text-tg-muted'} />
-                <span className={cn('text-[10px]', active ? 'text-tg-primary' : 'text-tg-muted')}>{it.label}</span>
+                <I size={20} className={active ? 'text-brand' : 'text-muted'} />
+                <span className={cn('text-[10px]', active ? 'text-brand' : 'text-muted')}>{it.label}</span>
               </button>
             )
           })}
@@ -73,8 +73,8 @@ function DashTab({ initData }: any) {
         <Box label="Pending Tasks" value={s?.pendingTasks ?? '...'} color="text-yellow-400" />
       </div>
       <div className="card">
-        <p className="text-xs text-tg-muted">Total Earned by Users</p>
-        <p className="text-2xl font-bold text-tg-primary">${fmtMoney(s?.totalEarned || 0)}</p>
+        <p className="text-xs text-muted">Total Earned by Users</p>
+        <p className="text-2xl font-bold text-brand">${fmtMoney(s?.totalEarned || 0)}</p>
       </div>
     </div>
   )
@@ -83,7 +83,7 @@ function DashTab({ initData }: any) {
 function Box({ label, value, color }: any) {
   return (
     <div className="card">
-      <p className="text-xs text-tg-muted">{label}</p>
+      <p className="text-xs text-muted">{label}</p>
       <p className={cn('text-2xl font-bold mt-1', color)}>{value}</p>
     </div>
   )
@@ -113,18 +113,18 @@ function UsersTab({ initData }: any) {
   if (selected) {
     return (
       <div className="p-4 space-y-3">
-        <button onClick={() => setSelected(null)} className="flex items-center gap-1 text-tg-muted text-sm">
+        <button onClick={() => setSelected(null)} className="flex items-center gap-1 text-muted text-sm">
           <ArrowLeft size={16} /> Back
         </button>
         <div className="card">
           <p className="font-bold text-lg">{selected.firstName} {selected.lastName}</p>
-          <p className="text-sm text-tg-muted">@{selected.username || 'user'}</p>
-          <p className="text-xs text-tg-muted">TG: {selected.telegramId}</p>
+          <p className="text-sm text-muted">@{selected.username || 'user'}</p>
+          <p className="text-xs text-muted">TG: {selected.telegramId}</p>
           <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            <div><p className="text-tg-muted text-xs">Main</p><p className="font-bold">${fmtMoney(selected.mainBalance)}</p></div>
-            <div><p className="text-tg-muted text-xs">Promote</p><p className="font-bold">${fmtMoney(selected.promoteBalance)}</p></div>
-            <div><p className="text-tg-muted text-xs">Earned</p><p className="font-bold">${fmtMoney(selected.totalEarned)}</p></div>
-            <div><p className="text-tg-muted text-xs">Referrals</p><p className="font-bold">{selected.totalReferrals}</p></div>
+            <div><p className="text-muted text-xs">Main</p><p className="font-bold">${fmtMoney(selected.mainBalance)}</p></div>
+            <div><p className="text-muted text-xs">Promote</p><p className="font-bold">${fmtMoney(selected.promoteBalance)}</p></div>
+            <div><p className="text-muted text-xs">Earned</p><p className="font-bold">${fmtMoney(selected.totalEarned)}</p></div>
+            <div><p className="text-muted text-xs">Referrals</p><p className="font-bold">{selected.totalReferrals}</p></div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -144,13 +144,13 @@ function UsersTab({ initData }: any) {
 
   return (
     <div className="p-4 space-y-3">
-      <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search user..." className="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2" />
+      <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search user..." className="w-full bg-bg border border-line rounded-xl px-3 py-2" />
       <button onClick={load} className="btn btn-primary w-full text-sm">Search</button>
       <div className="space-y-2">
         {users.map(u => (
           <button key={u.id} onClick={() => setSelected(u)} className="card w-full text-left">
             <p className="font-medium text-sm">{u.firstName} {u.isAdmin && '👑'} {u.isBanned && '🚫'}</p>
-            <p className="text-xs text-tg-muted">@{u.username || 'user'} • ${fmtMoney(u.mainBalance)}</p>
+            <p className="text-xs text-muted">@{u.username || 'user'} • ${fmtMoney(u.mainBalance)}</p>
           </button>
         ))}
       </div>
@@ -198,7 +198,7 @@ function TasksTab({ initData }: any) {
 
       {showNew && (
         <div className="card space-y-2">
-          <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2">
+          <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full bg-bg border border-line rounded-xl px-3 py-2">
             <option value="join_chat">📢 Join Chat</option>
             <option value="bot">🤖 Message Bot</option>
             <option value="view_post">📄 View Post</option>
@@ -208,11 +208,11 @@ function TasksTab({ initData }: any) {
             <option value="youtube">🖇️ YouTube</option>
             <option value="instagram">🕐 Instagram</option>
           </select>
-          <input placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2" />
-          <input placeholder="Link (@channel or URL)" value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} className="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2" />
-          <input placeholder="Reward USD (e.g. 0.05)" type="number" step="0.001" value={form.reward} onChange={e => setForm({ ...form, reward: e.target.value })} className="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2" />
-          <input placeholder="Admin Cut % (0-100)" type="number" step="1" value={form.adminCut} onChange={e => setForm({ ...form, adminCut: e.target.value })} className="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2" />
-          <select value={form.verifyType} onChange={e => setForm({ ...form, verifyType: e.target.value })} className="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2">
+          <input placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full bg-bg border border-line rounded-xl px-3 py-2" />
+          <input placeholder="Link (@channel or URL)" value={form.link} onChange={e => setForm({ ...form, link: e.target.value })} className="w-full bg-bg border border-line rounded-xl px-3 py-2" />
+          <input placeholder="Reward USD (e.g. 0.05)" type="number" step="0.001" value={form.reward} onChange={e => setForm({ ...form, reward: e.target.value })} className="w-full bg-bg border border-line rounded-xl px-3 py-2" />
+          <input placeholder="Admin Cut % (0-100)" type="number" step="1" value={form.adminCut} onChange={e => setForm({ ...form, adminCut: e.target.value })} className="w-full bg-bg border border-line rounded-xl px-3 py-2" />
+          <select value={form.verifyType} onChange={e => setForm({ ...form, verifyType: e.target.value })} className="w-full bg-bg border border-line rounded-xl px-3 py-2">
             <option value="manual">📸 Manual (Screenshot)</option>
             <option value="auto">🤖 Auto (Telegram only)</option>
           </select>
@@ -226,7 +226,7 @@ function TasksTab({ initData }: any) {
             <div className="flex justify-between">
               <div>
                 <p className="font-medium text-sm">{t.isActive ? '🟢' : '🔴'} {t.title}</p>
-                <p className="text-xs text-tg-muted">{t.type} • ${t.reward} • cut {t.adminCut}% • {t.verifyType}</p>
+                <p className="text-xs text-muted">{t.type} • ${t.reward} • cut {t.adminCut}% • {t.verifyType}</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -256,17 +256,17 @@ function WdTab({ initData }: any) {
 
   return (
     <div className="p-4 space-y-2">
-      {list.length === 0 && <p className="text-tg-muted text-center py-8">No withdrawals</p>}
+      {list.length === 0 && <p className="text-muted text-center py-8">No withdrawals</p>}
       {list.map(w => (
         <div key={w.id} className="card space-y-2">
           <div className="flex justify-between">
             <div>
               <p className="font-medium text-sm">#{w.id} — {w.user?.firstName}</p>
-              <p className="text-xs text-tg-muted">@{w.user?.username || 'user'}</p>
-              <p className="text-xs text-tg-muted">{w.method} • {w.address}</p>
+              <p className="text-xs text-muted">@{w.user?.username || 'user'}</p>
+              <p className="text-xs text-muted">{w.method} • {w.address}</p>
             </div>
             <div className="text-right">
-              <p className="font-bold text-tg-primary">${fmtMoney(w.amount)}</p>
+              <p className="font-bold text-brand">${fmtMoney(w.amount)}</p>
               <p className={cn('text-xs', w.status === 'pending' ? 'text-yellow-400' : w.status === 'approved' ? 'text-green-400' : 'text-red-400')}>{w.status}</p>
             </div>
           </div>
@@ -314,11 +314,11 @@ function SettingsTab({ initData }: any) {
     <div className="p-4 space-y-3">
       {fields.map(([k, label]) => (
         <div key={k}>
-          <label className="text-xs text-tg-muted">{label}</label>
+          <label className="text-xs text-muted">{label}</label>
           <input
             value={s[k] || ''}
             onChange={e => setS({ ...s, [k]: e.target.value })}
-            className="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 mt-1 text-sm"
+            className="w-full bg-bg border border-line rounded-xl px-3 py-2 mt-1 text-sm"
           />
         </div>
       ))}

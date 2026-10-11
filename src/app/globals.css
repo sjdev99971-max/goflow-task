@@ -3,14 +3,22 @@
 @tailwind utilities;
 
 :root { color-scheme: dark; }
-html, body { background: #0e0e10; color: #f5f5f7; overflow-x: hidden; }
-
+html, body { background: #0a0a0a; color: #fff; overflow-x: hidden; }
 * { -webkit-tap-highlight-color: transparent; }
+input, select, textarea { font-size: 16px; }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-thumb { background: #2c2c2e; border-radius: 3px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: #252525; border-radius: 2px; }
 
-.card { @apply bg-tg-card border border-tg-border rounded-2xl p-4; }
-.btn { @apply rounded-xl px-4 py-3 font-medium transition active:scale-95; }
-.btn-primary { @apply bg-tg-primary text-white hover:bg-tg-accent; }
-.btn-ghost { @apply bg-tg-card border border-tg-border text-tg-text; }
+@layer components {
+  .card { @apply bg-bg-card border border-line rounded-2xl p-4; }
+  .card-soft { @apply bg-bg-soft border border-line-soft rounded-2xl p-4; }
+  .btn { @apply rounded-xl px-4 py-3 font-semibold transition active:scale-95 disabled:opacity-50; }
+  .btn-brand { @apply bg-brand text-white hover:bg-brand-hover shadow-brand; }
+  .btn-ghost { @apply bg-bg-soft border border-line text-txt; }
+  .chip { @apply px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition; }
+  .chip-active { @apply bg-brand text-white; }
+  .chip-idle { @apply bg-bg-soft border border-line text-muted; }
+  .gradient-brand { background: linear-gradient(135deg, #ff6b1a 0%, #ff8c42 100%); }
+  .glow-brand { box-shadow: 0 0 20px rgba(255,107,26,0.4); }
+}
