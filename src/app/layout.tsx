@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import Script from 'next/script'
 
 export const metadata: Metadata = {
   title: 'GoFlow Task',
@@ -19,7 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        <meta charSet="utf-8" />
+        <script src="https://telegram.org/js/telegram-web-app.js" />
       </head>
       <body className="min-h-screen bg-tg-bg text-tg-text font-sans">
         {children}
