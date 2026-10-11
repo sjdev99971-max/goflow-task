@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { ChevronRight, Wallet, Settings, Gift, Shield, LogOut, ArrowLeft } from 'lucide-react'
+import { ChevronRight, Wallet, Settings, Gift, Shield, ArrowLeft } from 'lucide-react'
 import { fmtMoney, initials, cn } from '@/lib/utils'
 
-export default function ProfileTab({ user, initData, setTab }: any) {
+export default function ProfileTab({ user, initData, setPage }: any) {
   const [mode, setMode] = useState<'main' | 'withdraw' | 'convert'>('main')
   const [method, setMethod] = useState('binance')
   const [amount, setAmount] = useState('')
@@ -127,23 +127,22 @@ export default function ProfileTab({ user, initData, setTab }: any) {
           <span className="text-lg text-muted">.{fmtMoney(user.mainBalance).split('.')[1]}</span>
           <span className="text-xs ml-2 text-muted">USDT</span>
         </p>
-        <button onClick={() => setMode('withdraw')} className="btn btn-brand w-full mt-4 text-sm flex items-center justify-center gap-2">
+        <button onClick={() => setMode('withdraw')} className="btn btn-brand w-full mt-4 text-sm">
           ⬆️ WITHDRAW
         </button>
       </div>
 
       {/* Menu */}
       <div className="card-soft divide-y divide-line">
-        <MenuItem icon={<Gift size={16} className="text-brand" />} label="Rewards" onClick={() => setTab('rank')} />
+        <MenuItem icon={<Gift size={16} className="text-brand" />} label="Rewards" onClick={() => setPage('rewards')} />
         <MenuItem icon={<Wallet size={16} className="text-brand" />} label="Main → Promote" onClick={() => setMode('convert')} />
-        <MenuItem icon={<Shield size={16} className="text-green" />} label="Skills Verification" badge="New" />
-        <MenuItem icon={<Settings size={16} className="text-brand" />} label="Account Settings" />
+        <MenuItem icon={<Shield size={16} className="text-green" />} label="Skills Verification" onClick={() => setPage('skills')} />
+        <MenuItem icon={<Settings size={16} className="text-brand" />} label="Settings" onClick={() => setPage('settings')} />
         {user.isAdmin && (
           <MenuItem icon={<Shield size={16} className="text-gold" />} label="Admin Panel" href="/admin" highlight />
         )}
       </div>
 
-      {/* Support */}
       <a
         href="https://t.me/shanto13163"
         target="_blank"
@@ -161,11 +160,7 @@ export default function ProfileTab({ user, initData, setTab }: any) {
 function MenuItem({ icon, label, badge, onClick, href, highlight }: any) {
   const Comp: any = href ? 'a' : 'button'
   return (
-    <Comp
-      href={href}
-      onClick={onClick}
-      className="w-full flex items-center gap-3 py-3 px-1 active:opacity-70"
-    >
+    <Comp href={href} onClick={onClick} className="w-full flex items-center gap-3 py-3 px-1 active:opacity-70">
       <div className="w-8 h-8 rounded-lg bg-bg-card flex items-center justify-center">{icon}</div>
       <span className={cn('flex-1 text-left text-sm font-semibold', highlight && 'text-gold')}>{label}</span>
       {badge && <span className="text-[10px] bg-brand text-white px-2 py-0.5 rounded-full font-bold">{badge}</span>}

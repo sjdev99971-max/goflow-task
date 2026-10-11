@@ -15,7 +15,7 @@ const CATEGORIES = [
   { key: 'bot', label: 'Bot', icon: '🤖' }
 ]
 
-export default function TasksTab({ initData }: any) {
+export default function TasksTab({ initData, setPage }: any) {
   const [activeCat, setActiveCat] = useState('all')
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -46,7 +46,7 @@ export default function TasksTab({ initData }: any) {
       {/* Header */}
       <div className="flex items-center justify-between pt-2">
         <h1 className="text-2xl font-black">Task Center</h1>
-        <button className="chip chip-idle flex items-center gap-1">
+        <button onClick={() => setPage("history")} className="chip chip-idle flex items-center gap-1">
           <Clock size={12} /> History
         </button>
       </div>
@@ -83,7 +83,7 @@ export default function TasksTab({ initData }: any) {
       </div>
 
       {/* Link Accounts */}
-      <button className="card-soft w-full flex items-center justify-between">
+      <button onClick={() => setPage("accounts")} className="card-soft w-full flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-brand">🔗</span>
           <span className="text-sm font-semibold">LINK ACCOUNTS <span className="text-brand">{CATEGORIES.length - 1}</span></span>
