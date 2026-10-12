@@ -18,6 +18,7 @@ import SettingsPage from '@/components/app/pages/SettingsPage'
 import SkillsPage from '@/components/app/pages/SkillsPage'
 import NotificationsPage from '@/components/app/pages/NotificationsPage'
 import PromotePage from '@/components/app/pages/PromotePage'
+import ForceJoinGate from '@/components/app/ForceJoinGate'
 import DepositPage from '@/components/app/pages/DepositPage'
 
 import { Home, Target, Trophy, Activity, User } from 'lucide-react'
@@ -34,10 +35,15 @@ function AppInner() {
   const { user, loading, error, initData } = useTelegram()
   const [tab, setTab] = useState('home')
   const [page, setPage] = useState<string | null>(null)
+  const [forcePassed, setForcePassed] = useState(false)
 
   if (loading) return <Splash />
   if (error) return <ErrorScreen message={error} />
   if (!user) return <ErrorScreen message="User data পাওয়া যায়নি। Telegram bot থেকে আবার খুলুন।" />
+
+  if (!forcePassed) {
+    return <ForceJoinGate initData={initData} onPass={() => setForcePassed(true)} />
+  }
 
   const tabs = [
     { id: 'home', icon: Home, label: 'Home' },

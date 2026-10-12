@@ -184,14 +184,23 @@ function TaskDetail({ task, initData, onBack, setPage }: any) {
     reader.readAsDataURL(f)
   }
 
+  const isAuto = task.verifyType === 'auto' || ['join_chat', 'bot', 'group'].includes(task.type)
+
   const submit = async () => {
-    const finalProof = imgData ? `[img]${imgData.substring(0, 200)}` : proof
-    if (!finalProof.trim()) { setMsg('❌ Proof বা screenshot দিন'); return }
+    // Auto task — proof লাগবে না
+    if (!isAuto) {
+      const finalProof = imgData ? `[img]${imgData.substring(0, 200)}` : proof
+      if (!finalProof.trim()) { setMsg('❌ Proof বা screenshot দিন'); return }
+    }
     setBusy(true); setMsg('')
     const res = await fetch('/api/user/proof', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-init-data': initData },
-      body: JSON.stringify({ taskId: task.id, proof: finalProof, image: imgData })
+      body: JSON.stringify({
+        taskId: task.id,
+        proof: imgData ? `[img]${imgData.substring(0, 200)}` : proof,
+        image: imgData
+      })
     })
     const d = await res.json()
     setBusy(false)
