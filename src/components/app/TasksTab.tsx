@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Search, ChevronDown, ArrowLeft, CheckCircle2, Clock } from 'lucide-react'
 import { cn, fmtMoney } from '@/lib/utils'
 import { TaskSkeleton, Shimmer } from '@/components/ui/Loading'
+import BrandLogo from './BrandLogo'
 
 const CATEGORIES = [
   { key: 'all', label: 'ALL', icon: '🌐' },
@@ -39,7 +40,7 @@ export default function TasksTab({ initData, setPage }: any) {
   )
 
   if (selectedTask) {
-    return <TaskDetail task={selectedTask} initData={initData} onBack={() => setSelectedTask(null)} />
+    return <TaskDetail task={selectedTask} initData={initData} onBack={() => setSelectedTask(null)} setPage={setPage} />
   }
 
   return (
@@ -129,19 +130,9 @@ function TaskCard({ task, onClick }: any) {
   const pending = task.completed === 'pending'
   const reward = task.reward
 
-  const iconFor = () => {
-    const map: any = {
-      join_chat: '✈️', bot: '🤖', view_post: '📘', micro: '⚫',
-      x: '𝕏', tiktok: '🎵', youtube: '▶️', instagram: '📸'
-    }
-    return map[task.type] || '🎯'
-  }
-
   return (
     <div className="card flex items-center gap-3">
-      <div className="w-11 h-11 rounded-xl bg-bg-soft border border-line flex items-center justify-center text-lg flex-shrink-0">
-        {iconFor()}
-      </div>
+      <BrandLogo type={task.type} size={44} />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-bold truncate">{task.title}</p>
         <div className="flex items-center gap-2 mt-1">
@@ -164,8 +155,9 @@ function TaskCard({ task, onClick }: any) {
   )
 }
 
-function TaskDetail({ task, initData, onBack }: any) {
+function TaskDetail({ task, initData, onBack, setPage }: any) {
   const [proof, setProof] = useState('')
+  const [imgData, setImgData] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [accounts, setAccounts] = useState<any[]>([])
@@ -176,38 +168,41 @@ function TaskDetail({ task, initData, onBack }: any) {
       .then(r => r.json()).then(d => d.ok && setAccounts(d.accounts || []))
   }, [initData])
 
-  // Suggest account based on task type
-  const suggestPlatform = () => {
-    const map: any = {
-      join_chat: null, bot: null,
-      view_post: 'google',
-      micro: 'github',
-      x: 'twitter',
-      tiktok: 'tiktok',
-      youtube: 'youtube',
-      instagram: 'instagram'
-    }
-    return map[task.type]
+  const platformMap: any = {
+    view_post: 'google', micro: 'github', x: 'twitter',
+    tiktok: 'tiktok', youtube: 'youtube', instagram: 'instagram'
+  }
+  const needPlatform = platformMap[task.type]
+  const suggested = needPlatform ? accounts.find(a => a.platform === needPlatform) : null
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (f.size > 2 * 1024 * 1024) { setMsg('❌ Max 2MB image'); return }
+    const reader = new FileReader()
+    reader.onload = () => setImgData(reader.result as string)
+    reader.readAsDataURL(f)
   }
 
-  const suggested = accounts.find(a => a.platform === suggestPlatform())
-
   const submit = async () => {
-    if (!proof) return
+    const finalProof = imgData ? `[img]${imgData.substring(0, 200)}` : proof
+    if (!finalProof.trim()) { setMsg('❌ Proof বা screenshot দিন'); return }
     setBusy(true); setMsg('')
     const res = await fetch('/api/user/proof', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-init-data': initData },
-      body: JSON.stringify({ taskId: task.id, proof })
+      body: JSON.stringify({ taskId: task.id, proof: finalProof, image: imgData })
     })
     const d = await res.json()
     setBusy(false)
-    if (d.ok) setMsg('✅ Submitted! Admin approve করলে credit পাবেন।')
-    else setMsg('❌ ' + (d.error || 'Failed'))
+    if (d.ok) {
+      setMsg(d.autoApproved ? `✅ Auto-verified! +$${d.reward}` : '✅ Submitted! Admin approve করলে credit পাবেন।')
+      setProof(''); setImgData(null)
+    } else setMsg('❌ ' + (d.error || d.message || 'Failed'))
   }
 
   return (
-    <div className="p-4 space-y-3">
+    <div className="p-4 space-y-3 animate-fade-in">
       <button onClick={onBack} className="flex items-center gap-1 text-muted text-sm pt-2">
         <ArrowLeft size={16} /> Back
       </button>
@@ -233,53 +228,76 @@ function TaskDetail({ task, initData, onBack }: any) {
 
         <div className="mt-4 pt-4 border-t border-line">
           {task.verifyType === 'auto' ? (
-            <p className="text-xs text-muted text-center">Auto verification — link খুললেই হবে</p>
+            <div className="text-center space-y-2">
+              <p className="text-xs text-muted">Auto verification — Link খুলে Verify চাপুন</p>
+              <button onClick={submit} disabled={busy} className="btn btn-brand w-full">
+                {busy ? 'Checking...' : '✅ Verify Now'}
+              </button>
+            </div>
           ) : (
             <>
-              <label className="text-xs text-muted font-bold">📸 Proof (username / screenshot URL)</label>
-
-              {suggested && (
-                <div className="mt-2 bg-brand/10 border border-brand/30 rounded-xl p-3">
-                  <p className="text-[10px] text-brand font-bold mb-1">✨ Suggested from saved accounts</p>
-                  <button
-                    onClick={() => setProof(suggested.username)}
-                    className="w-full flex items-center justify-between bg-bg-card border border-line rounded-lg px-3 py-2 active:scale-95 transition"
-                  >
-                    <span className="text-xs font-mono truncate">{suggested.username}</span>
-                    <span className="text-[10px] bg-brand text-white px-2 py-0.5 rounded-full font-bold">USE</span>
-                  </button>
+              {/* Link Account Suggestion */}
+              {needPlatform && (
+                <div className={suggested ? 'bg-green/10 border border-green/30 rounded-xl p-3 mb-3' : 'bg-brand/10 border border-brand/30 rounded-xl p-3 mb-3'}>
+                  {suggested ? (
+                    <>
+                      <p className="text-[10px] text-green font-bold mb-1">✨ Saved {needPlatform} account</p>
+                      <button onClick={() => setProof(suggested.username)}
+                        className="w-full flex items-center justify-between bg-bg-card border border-line rounded-lg px-3 py-2">
+                        <span className="text-xs font-mono truncate">{suggested.username}</span>
+                        <span className="text-[10px] bg-brand text-white px-2 py-0.5 rounded-full font-bold">USE</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[10px] text-brand font-bold mb-1">💡 {needPlatform} account save করুন</p>
+                      <p className="text-[10px] text-txt-soft mb-2">একবার save করলে বার বার type করতে হবে না</p>
+                      <button onClick={() => setPage && setPage('accounts')}
+                        className="text-[10px] bg-brand text-white px-3 py-1.5 rounded-lg font-bold">
+                        → Add Account
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 
-              {!suggested && suggestPlatform() && (
-                <div className="mt-2 bg-bg-soft border border-line rounded-xl p-3 text-center">
-                  <p className="text-[10px] text-muted mb-1">
-                    এই task এর জন্য {suggestPlatform()} account save করুন
-                  </p>
-                  <button
-                    onClick={() => {
-                      onBack()
-                      // Navigate to accounts — parent should handle
-                    }}
-                    className="text-[10px] text-brand font-bold"
-                  >
-                    → Go to Account Management
-                  </button>
-                </div>
-              )}
+              <label className="text-xs text-muted font-bold">📸 Proof (Screenshot বা Username)</label>
 
-              <input
-                value={proof}
-                onChange={e => setProof(e.target.value)}
-                placeholder="Paste username or screenshot URL"
-                className="w-full bg-bg-soft border border-line rounded-xl px-3 py-2.5 mt-2 text-sm focus:outline-none focus:border-brand"
-              />
-              <button onClick={submit} disabled={busy || !proof} className="btn btn-brand w-full mt-3">
-                {busy ? 'Submitting...' : 'Submit Proof'}
+              {/* File upload */}
+              <div className="mt-2 space-y-2">
+                <label className="block bg-bg-soft border-2 border-dashed border-line rounded-xl p-4 text-center active:scale-98 transition cursor-pointer">
+                  <input type="file" accept="image/*" onChange={onFile} className="hidden" />
+                  {imgData ? (
+                    <div>
+                      <img src={imgData} alt="preview" className="max-h-32 mx-auto rounded-lg mb-2" />
+                      <p className="text-[10px] text-green font-bold">✅ Image ready</p>
+                      <p className="text-[10px] text-muted">Tap to change</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-2xl mb-1">📷</p>
+                      <p className="text-xs font-bold text-brand">Upload Screenshot</p>
+                      <p className="text-[10px] text-muted mt-1">Max 2MB · JPG/PNG</p>
+                    </div>
+                  )}
+                </label>
+
+                <p className="text-[10px] text-muted text-center">— OR paste username/link —</p>
+
+                <input
+                  value={proof}
+                  onChange={e => setProof(e.target.value)}
+                  placeholder="e.g. @yourhandle"
+                  className="w-full bg-bg-soft border border-line rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand"
+                />
+              </div>
+
+              <button onClick={submit} disabled={busy || (!proof && !imgData)} className="btn btn-brand w-full mt-3 disabled:opacity-50">
+                {busy ? 'Submitting...' : '📤 Submit Proof'}
               </button>
             </>
           )}
-          {msg && <p className="text-xs text-center mt-2">{msg}</p>}
+          {msg && <p className="text-xs text-center mt-2 font-semibold">{msg}</p>}
         </div>
       </div>
     </div>

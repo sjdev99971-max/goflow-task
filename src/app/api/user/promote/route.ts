@@ -13,19 +13,14 @@ export async function GET(req: NextRequest) {
 
   const list = await prisma.promote.findMany({
     where: { userId: user.id },
-    orderBy: { id: 'desc' },
-    take: 20
+    orderBy: { id: 'desc' }, take: 20
   })
-
   const u = await prisma.user.findUnique({ where: { id: user.id } })
 
   return NextResponse.json({
     ok: true,
     promotes: list,
-    balances: {
-      main: u?.mainBalance || 0,
-      promote: u?.promoteBalance || 0
-    },
+    balances: { main: u?.mainBalance || 0, promote: u?.promoteBalance || 0 },
     minPromote: parseFloat(await getSetting('min_promote')) || 1
   })
 }
@@ -46,14 +41,7 @@ export async function POST(req: NextRequest) {
 
   const source = payFrom === 'main' ? 'main' : 'promote'
   const available = source === 'main' ? u.mainBalance : u.promoteBalance
-
-  if (available < amt) {
-    return NextResponse.json({
-      ok: false,
-      error: `insufficient_${source}`,
-      available
-    })
-  }
+  if (available < amt) return NextResponse.json({ ok: false, error: `insufficient_${source}`, available })
 
   const pct = parseFloat(await getSetting('promote_commission')) || 20
   const commission = +(amt * pct / 100).toFixed(4)
@@ -62,30 +50,38 @@ export async function POST(req: NextRequest) {
   if (source === 'main') updateData.mainBalance = { decrement: amt }
   else updateData.promoteBalance = { decrement: amt }
 
+  // ✅ AUTO-APPROVE — User paid, so instant
   await prisma.$transaction([
     prisma.user.update({ where: { id: user.id }, data: updateData }),
     prisma.promote.create({
       data: {
-        userId: user.id,
-        type,
-        link,
-        amount: amt,
-        commission,
-        note: `paid_from_${source}`
+        userId: user.id, type, link, amount: amt, commission,
+        status: 'approved',
+        note: `auto-approved · paid_from_${source}`
       }
     })
   ])
 
+  // Notify admin (info only, no action needed)
   const admins = await prisma.user.findMany({ where: { isAdmin: true }, select: { telegramId: true } })
   for (const a of admins) {
     try {
       await tg('sendMessage', {
         chat_id: a.telegramId.toString(),
-        text: `🚀 <b>New Promote Request</b>\n\n👤 ${u.firstName}\n📌 ${type}\n🔗 <code>${link}</code>\n💵 $${amt}\n💸 Commission: $${commission}\n💰 Paid from: <b>${source.toUpperCase()}</b>`,
+        text: `🚀 <b>Promote Activated (Auto)</b>\n\n👤 ${u.firstName}\n📌 ${type}\n🔗 <code>${link}</code>\n💵 $${amt}\n💸 Commission: $${commission}\n💰 Paid from: <b>${source.toUpperCase()}</b>\n✅ Status: <b>APPROVED</b>`,
         parse_mode: 'HTML'
       })
     } catch {}
   }
 
-  return NextResponse.json({ ok: true, paidFrom: source, commission })
+  // Notify user
+  try {
+    await tg('sendMessage', {
+      chat_id: u.telegramId.toString(),
+      text: `🎉 <b>Promote Activated!</b>\n\n📌 ${type}\n🔗 ${link}\n💵 Paid: $${amt}\n✅ Status: Approved & Live`,
+      parse_mode: 'HTML'
+    })
+  } catch {}
+
+  return NextResponse.json({ ok: true, paidFrom: source, commission, status: 'approved' })
 }
