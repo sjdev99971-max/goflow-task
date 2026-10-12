@@ -3,7 +3,7 @@
 import { TelegramProvider, useTelegram } from '@/components/TelegramProvider'
 import { useEffect, useState } from 'react'
 import {
-  Users, ListChecks, Wallet, Settings, LayoutDashboard,
+  Users, ListChecks, Wallet, Settings, LayoutDashboard, CreditCard,
   ArrowLeft, Shield, Crown, CheckCircle2, XCircle, Plus, Trash2,
   UserPlus, UserMinus, Eye, Clock, Sparkles, DollarSign
 } from 'lucide-react'
@@ -32,6 +32,7 @@ function AdminInner() {
     { id: 'tasks', icon: Sparkles, label: 'Tasks' },
     { id: 'users', icon: Users, label: 'Users' },
     { id: 'admins', icon: Shield, label: 'Admins' },
+    { id: 'deposits', icon: CreditCard, label: 'Deposits' },
     { id: 'wd', icon: Wallet, label: 'Withdraw' },
     { id: 'settings', icon: Settings, label: 'Settings' }
   ]
@@ -59,6 +60,7 @@ function AdminInner() {
         {tab === 'tasks' && <TasksTab initData={initData} />}
         {tab === 'users' && <UsersTab initData={initData} />}
         {tab === 'admins' && <AdminsTab initData={initData} />}
+        {tab === 'deposits' && <DepositsTab initData={initData} />}
         {tab === 'wd' && <WdTab initData={initData} />}
         {tab === 'settings' && <SettingsTab initData={initData} />}
       </div>
@@ -664,6 +666,157 @@ function WdTab({ initData }: any) {
   )
 }
 
+
+// ============ DEPOSITS ============
+function DepositsTab({ initData }: any) {
+  const [subs, setSubs] = useState<any[]>([])
+  const [status, setStatus] = useState('pending')
+  const [busy, setBusy] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [rejectId, setRejectId] = useState<number | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [creditTo, setCreditTo] = useState<'main' | 'promote' | 'both'>('main')
+
+  const load = () => {
+    setLoading(true)
+    fetch(`/api/admin/deposits?status=${status}`, { headers: { 'x-init-data': initData } })
+      .then(r => r.json())
+      .then(d => d.ok && setSubs(d.deposits))
+      .finally(() => setLoading(false))
+  }
+  useEffect(load, [status, initData])
+
+  const approve = async (id: number) => {
+    setBusy(id)
+    const r = await fetch('/api/admin/deposits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-init-data': initData },
+      body: JSON.stringify({ depositId: id, action: 'approve', creditTo })
+    })
+    const d = await r.json()
+    setBusy(null)
+    if (d.ok) setSubs(prev => prev.filter(s => s.id !== id))
+    else alert('❌ ' + (d.error || 'Failed'))
+  }
+
+  const reject = async () => {
+    if (!rejectId || !rejectReason.trim()) return
+    setBusy(rejectId)
+    const r = await fetch('/api/admin/deposits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-init-data': initData },
+      body: JSON.stringify({ depositId: rejectId, action: 'reject', reason: rejectReason.trim() })
+    })
+    const d = await r.json()
+    setBusy(null)
+    if (d.ok) {
+      setSubs(prev => prev.filter(s => s.id !== rejectId))
+      setRejectId(null); setRejectReason('')
+    }
+  }
+
+  return (
+    <div className="space-y-3 animate-fade-in">
+      <div className="bg-bg-soft rounded-xl p-1 flex">
+        {['pending', 'approved', 'rejected'].map(st => (
+          <button key={st} onClick={() => setStatus(st)}
+            className={cn('flex-1 py-2 rounded-lg text-[11px] font-bold uppercase',
+              status === st ? 'bg-brand text-white' : 'text-muted')}>
+            {st}
+          </button>
+        ))}
+      </div>
+
+      <div className="card-soft">
+        <p className="text-[10px] text-muted mb-2">Credit approved amount to:</p>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { id: 'main', label: 'Main' },
+            { id: 'promote', label: 'Promote' },
+            { id: 'both', label: 'Both' }
+          ].map(t => (
+            <button key={t.id} onClick={() => setCreditTo(t.id as any)}
+              className={cn('py-2 rounded-lg text-[11px] font-bold',
+                creditTo === t.id ? 'bg-brand text-white' : 'bg-bg-soft text-muted')}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? <ListSkeleton count={3} /> :
+       subs.length === 0 ? (
+        <div className="card text-center py-12">
+          <CheckCircle2 size={40} className="mx-auto text-green/50 mb-2" />
+          <p className="text-sm text-muted">No {status} deposits</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {subs.map(s => (
+            <div key={s.id} className="card space-y-3">
+              <div className="flex items-start gap-3">
+                {s.user.photoUrl ? (
+                  <img src={s.user.photoUrl} className="w-10 h-10 rounded-full border border-line" alt="" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full gradient-brand flex items-center justify-center font-bold">
+                    {s.user.firstName?.[0] || 'U'}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold">{s.user.firstName}</p>
+                  <p className="text-[10px] text-muted">@{s.user.username || 'user'}</p>
+                  <p className="text-[10px] text-muted font-mono">{s.user.telegramId}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-black text-green">${fmtMoney(s.amount)}</p>
+                  <p className="text-[9px] text-muted uppercase font-bold">{s.method}</p>
+                </div>
+              </div>
+
+              <div className="bg-bg-soft rounded-xl p-3 space-y-1 text-[10px]">
+                <p className="text-muted">TXID:</p>
+                <p className="font-mono break-all text-xs">{s.txid || '—'}</p>
+                {s.senderAddr && <p className="text-muted mt-1">Sender: <span className="font-mono">{s.senderAddr}</span></p>}
+                {s.rejectReason && <p className="text-red mt-1">❌ Reason: {s.rejectReason}</p>}
+              </div>
+
+              {status === 'pending' && (
+                <div className="flex gap-2">
+                  <button onClick={() => setRejectId(s.id)} disabled={busy === s.id}
+                    className="flex-1 bg-red/15 text-red py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 disabled:opacity-50">
+                    <XCircle size={14} /> Reject
+                  </button>
+                  <button onClick={() => approve(s.id)} disabled={busy === s.id}
+                    className="flex-1 bg-green/20 text-green py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 disabled:opacity-50">
+                    <CheckCircle2 size={14} /> {busy === s.id ? 'Adding...' : 'Approve'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {rejectId && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur z-50 flex items-end">
+          <div className="w-full max-w-lg mx-auto bg-bg-card rounded-t-3xl p-5 space-y-3 animate-fade-in">
+            <p className="text-sm font-bold">❌ Reject Deposit #{rejectId}</p>
+            <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+              placeholder="Reason (must)" rows={3}
+              className="w-full bg-bg-soft border border-line rounded-xl px-3 py-2.5 text-sm" />
+            <div className="flex gap-2">
+              <button onClick={() => { setRejectId(null); setRejectReason('') }}
+                className="flex-1 btn btn-ghost">Cancel</button>
+              <button onClick={reject} disabled={!rejectReason.trim()}
+                className="flex-1 bg-red text-white rounded-xl py-3 font-bold disabled:opacity-50">Reject</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ============ SETTINGS ============
 function SettingsTab({ initData }: any) {
   const [s, setS] = useState<any>({})
@@ -693,6 +846,11 @@ function SettingsTab({ initData }: any) {
     ['support_username', 'Support Username (no @)', 'text'],
     ['developer_id', '👑 Developer Telegram ID', 'text'],
     ['min_withdraw', 'Min Withdraw (USD)', 'number'],
+    ['min_deposit', 'Min Deposit (USD)', 'number'],
+    ['min_promote', 'Min Promote (USD)', 'number'],
+    ['deposit_binance_uid', 'Deposit — Binance UID', 'text'],
+    ['deposit_bep20_address', 'Deposit — BEP20 Address', 'text'],
+    ['deposit_ton_address', 'Deposit — TON Address', 'text'],
     ['referral_percent', 'Referral %', 'number'],
     ['promote_commission', 'Promote Commission %', 'number'],
     ['force_channels', 'Force Channels (comma)', 'text'],

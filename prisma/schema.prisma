@@ -36,6 +36,7 @@ model User {
   withdrawals     Withdrawal[]
   promotes        Promote[]
   accounts        UserAccount[]
+  deposits        Deposit[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -143,4 +144,25 @@ model UserAccount {
 
   @@unique([userId, platform])
   @@index([userId])
+}
+
+
+model Deposit {
+  id           Int      @id @default(autoincrement())
+  userId       BigInt
+  amount       Float
+  method       String
+  txid         String?
+  senderAddr   String?
+  status       String   @default("pending")
+  note         String?
+  rejectReason String?
+  reviewedBy   BigInt?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }

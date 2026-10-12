@@ -18,6 +18,7 @@ import SettingsPage from '@/components/app/pages/SettingsPage'
 import SkillsPage from '@/components/app/pages/SkillsPage'
 import NotificationsPage from '@/components/app/pages/NotificationsPage'
 import PromotePage from '@/components/app/pages/PromotePage'
+import DepositPage from '@/components/app/pages/DepositPage'
 
 import { Home, Target, Trophy, Activity, User } from 'lucide-react'
 
@@ -61,6 +62,7 @@ function AppInner() {
           {page === 'skills' && <SkillsPage user={user} initData={initData} onBack={goBack} />}
           {page === 'notifications' && <NotificationsPage initData={initData} onBack={goBack} />}
           {page === 'promote' && <PromotePage user={user} initData={initData} onBack={goBack} setPage={setPage} />}
+          {page === 'deposit' && <DepositPage user={user} initData={initData} onBack={goBack} />}
           {page === 'withdraw' && <ProfileTab user={user} initData={initData} setTab={setTab} setPage={setPage} initialMode="withdraw" />}
         </div>
       </div>

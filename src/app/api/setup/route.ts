@@ -139,7 +139,31 @@ const SQL: string[] = [
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE("userId", platform)
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_acc_user ON "UserAccount"("userId")`
+  `CREATE INDEX IF NOT EXISTS idx_acc_user ON "UserAccount"("userId")`,
+
+  `CREATE TABLE IF NOT EXISTS "Deposit" (
+    id SERIAL PRIMARY KEY,
+    "userId" BIGINT NOT NULL,
+    amount DOUBLE PRECISION NOT NULL,
+    method TEXT NOT NULL,
+    txid TEXT,
+    "senderAddr" TEXT,
+    status TEXT DEFAULT 'pending',
+    note TEXT,
+    "rejectReason" TEXT,
+    "reviewedBy" BIGINT,
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_dep_user ON "Deposit"("userId")`,
+  `CREATE INDEX IF NOT EXISTS idx_dep_status ON "Deposit"(status)`,
+
+  // Settings
+  `INSERT INTO "Setting" (key, value) VALUES ('deposit_binance_uid', '') ON CONFLICT (key) DO NOTHING`,
+  `INSERT INTO "Setting" (key, value) VALUES ('deposit_bep20_address', '') ON CONFLICT (key) DO NOTHING`,
+  `INSERT INTO "Setting" (key, value) VALUES ('deposit_ton_address', '') ON CONFLICT (key) DO NOTHING`,
+  `INSERT INTO "Setting" (key, value) VALUES ('min_deposit', '1') ON CONFLICT (key) DO NOTHING`,
+  `INSERT INTO "Setting" (key, value) VALUES ('min_promote', '1') ON CONFLICT (key) DO NOTHING`,
 ]
 
 export async function GET(req: NextRequest) {

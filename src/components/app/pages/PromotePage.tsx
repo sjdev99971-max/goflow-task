@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
-import { ArrowLeft, Rocket, Send, Users, Bot as BotIcon, FileText, Globe, Check, Info } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, Rocket, Send, Users, Bot as BotIcon, FileText, Globe, Check, Info, Wallet, TrendingUp, CreditCard } from 'lucide-react'
 import { cn, fmtMoney } from '@/lib/utils'
 import { Spinner } from '@/components/ui/Loading'
 
@@ -17,9 +17,26 @@ export default function PromotePage({ user, initData, onBack, setPage }: any) {
   const [type, setType] = useState<string | null>(null)
   const [link, setLink] = useState('')
   const [amount, setAmount] = useState('')
+  const [payFrom, setPayFrom] = useState<'main' | 'promote'>('promote')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [result, setResult] = useState<any>(null)
+  const [balances, setBalances] = useState({ main: user.mainBalance || 0, promote: user.promoteBalance || 0 })
+  const [minPromote, setMinPromote] = useState(1)
+  const [refreshing, setRefreshing] = useState(true)
+
+  const load = async () => {
+    setRefreshing(true)
+    const r = await fetch('/api/user/promote', { headers: { 'x-init-data': initData } })
+    const d = await r.json()
+    if (d.ok) {
+      setBalances(d.balances)
+      setMinPromote(d.minPromote)
+    }
+    setRefreshing(false)
+  }
+
+  useEffect(() => { load() }, [initData])
 
   const selected = TYPES.find(t => t.id === type)
   const commission = amount ? +(parseFloat(amount) * 0.2).toFixed(4) : 0
@@ -31,26 +48,26 @@ export default function PromotePage({ user, initData, onBack, setPage }: any) {
     const r = await fetch('/api/user/promote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-init-data': initData },
-      body: JSON.stringify({ type, link, amount: parseFloat(amount) })
+      body: JSON.stringify({ type, link, amount: parseFloat(amount), payFrom })
     })
     const d = await r.json()
     setBusy(false)
     if (d.ok) {
-      setResult({ type: selected?.label, link, amount: parseFloat(amount), commission, actual })
+      setResult({ type: selected?.label, link, amount: parseFloat(amount), commission, actual, payFrom })
       setStep('done')
     } else {
-      setMsg('❌ ' + (d.error || d.message || 'Failed'))
+      setMsg('❌ ' + (d.error || 'Failed'))
     }
   }
 
   if (step === 'done' && result) {
     return (
       <div className="p-4 space-y-4 animate-fade-in">
-        <button onClick={onBack} className="flex items-center gap-1 text-muted text-sm pt-2">
+        <button onClick={() => { setStep('select'); load() }} className="flex items-center gap-1 text-muted text-sm pt-2">
           <ArrowLeft size={16} /> Back
         </button>
         <div className="card text-center py-8 space-y-3">
-          <div className="w-16 h-16 rounded-full bg-green/20 flex items-center justify-center mx-auto animate-scale-in">
+          <div className="w-16 h-16 rounded-full bg-green/20 flex items-center justify-center mx-auto">
             <Check size={32} className="text-green" />
           </div>
           <p className="text-lg font-black">Promote Request Submitted!</p>
@@ -59,6 +76,7 @@ export default function PromotePage({ user, initData, onBack, setPage }: any) {
           <div className="bg-bg-soft rounded-xl p-4 text-left space-y-2 mt-4">
             <Row label="Type" value={result.type} />
             <Row label="Link" value={result.link} mono />
+            <Row label="Paid from" value={result.payFrom.toUpperCase()} />
             <Row label="Amount" value={`$${result.amount}`} />
             <Row label="Commission (20%)" value={`−$${result.commission}`} color="text-red" />
             <div className="pt-2 border-t border-line">
@@ -89,25 +107,50 @@ export default function PromotePage({ user, initData, onBack, setPage }: any) {
               placeholder={selected.placeholder}
               className="w-full bg-bg-soft border border-line rounded-xl px-3 py-2.5 mt-1 text-sm font-mono focus:outline-none focus:border-brand"
             />
-            {selected.auto && (
-              <p className="text-[10px] text-green mt-1">✓ Auto-verify হবে (Telegram API)</p>
-            )}
+            {selected.auto && <p className="text-[10px] text-green mt-1">✓ Auto-verify (Telegram API)</p>}
+          </div>
+
+          {/* Pay From Selector */}
+          <div>
+            <label className="text-[10px] text-muted uppercase tracking-wider font-bold">Pay From</label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <button
+                onClick={() => setPayFrom('promote')}
+                className={cn('rounded-xl py-3 px-3 text-left transition',
+                  payFrom === 'promote' ? 'bg-brand text-white' : 'bg-bg-soft border border-line'
+                )}
+              >
+                <p className="text-[10px] opacity-80">Promote Balance</p>
+                <p className="text-sm font-black mt-0.5">${fmtMoney(balances.promote)}</p>
+              </button>
+              <button
+                onClick={() => setPayFrom('main')}
+                className={cn('rounded-xl py-3 px-3 text-left transition',
+                  payFrom === 'main' ? 'bg-brand text-white' : 'bg-bg-soft border border-line'
+                )}
+              >
+                <p className="text-[10px] opacity-80">Main Balance</p>
+                <p className="text-sm font-black mt-0.5">${fmtMoney(balances.main)}</p>
+              </button>
+            </div>
           </div>
 
           <div>
-            <label className="text-[10px] text-muted uppercase tracking-wider font-bold">Amount (USD)</label>
+            <label className="text-[10px] text-muted uppercase tracking-wider font-bold">
+              Amount (USD) — min ${minPromote}
+            </label>
             <input
               value={amount}
               onChange={e => setAmount(e.target.value)}
               type="number"
               step="0.1"
-              min="1"
-              placeholder="Min $1"
+              min={minPromote}
+              placeholder={`Min $${minPromote}`}
               className="w-full bg-bg-soft border border-line rounded-xl px-3 py-2.5 mt-1 text-sm font-mono focus:outline-none focus:border-brand"
             />
           </div>
 
-          {amount && parseFloat(amount) >= 1 && (
+          {amount && parseFloat(amount) >= minPromote && (
             <div className="bg-bg-soft rounded-xl p-3 space-y-1.5 text-xs">
               <Row label="You pay" value={`$${parseFloat(amount).toFixed(4)}`} />
               <Row label="Commission (20%)" value={`−$${commission.toFixed(4)}`} color="text-red" />
@@ -117,16 +160,9 @@ export default function PromotePage({ user, initData, onBack, setPage }: any) {
             </div>
           )}
 
-          <div className="bg-brand/10 border border-brand/30 rounded-xl p-3 flex gap-2">
-            <Info size={14} className="text-brand flex-shrink-0 mt-0.5" />
-            <p className="text-[10px] text-txt-soft">
-              Promote Balance থেকে কাটা হবে। Main balance থাকলে আগে <b>Main → Promote</b> convert করুন।
-            </p>
-          </div>
-
           <button
             onClick={submit}
-            disabled={busy || !link || !amount || parseFloat(amount) < 1}
+            disabled={busy || !link || !amount || parseFloat(amount) < minPromote}
             className="btn btn-brand w-full flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {busy ? <><Spinner size={14} /> Submitting...</> : <><Rocket size={16} /> Submit Promote</>}
@@ -145,24 +181,46 @@ export default function PromotePage({ user, initData, onBack, setPage }: any) {
       </button>
       <div>
         <h1 className="text-2xl font-black">🚀 Promote</h1>
-        <p className="text-xs text-muted mt-1">আপনার channel, group, bot বা post promote করুন</p>
+        <p className="text-xs text-muted mt-1">Channel, Group, Bot বা Post promote করুন</p>
       </div>
 
-      <div className="card-soft">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted">Promote Balance</span>
-          <span className="text-lg font-black text-brand">${fmtMoney(user.promoteBalance || 0)}</span>
+      {/* Balances */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="card-soft">
+          <div className="flex items-center gap-1">
+            <TrendingUp size={12} className="text-brand" />
+            <span className="text-[10px] text-muted uppercase">Promote</span>
+          </div>
+          <p className="text-lg font-black text-brand mt-1">${fmtMoney(balances.promote)}</p>
         </div>
-        <button
-          onClick={() => setPage && setPage('profile')}
-          className="text-[10px] text-brand font-bold mt-2 active:opacity-70"
-        >
-          → Main → Promote convert করুন
-        </button>
+        <div className="card-soft">
+          <div className="flex items-center gap-1">
+            <Wallet size={12} className="text-green" />
+            <span className="text-[10px] text-muted uppercase">Main</span>
+          </div>
+          <p className="text-lg font-black text-green mt-1">${fmtMoney(balances.main)}</p>
+        </div>
       </div>
+
+      {/* Deposit Card */}
+      <button
+        onClick={() => setPage && setPage('deposit')}
+        className="card w-full text-left active:scale-98 transition"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-green/20 flex items-center justify-center flex-shrink-0">
+            <CreditCard size={20} className="text-green" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-black">💳 Deposit Funds</p>
+            <p className="text-[10px] text-muted">Binance UID · BEP20 · TON</p>
+          </div>
+          <span className="text-[10px] bg-green text-white px-2 py-1 rounded-full font-bold">ADD</span>
+        </div>
+      </button>
 
       <div className="space-y-2">
-        <p className="text-[10px] text-muted uppercase tracking-wider font-bold px-1">Select Type</p>
+        <p className="text-[10px] text-muted uppercase tracking-wider font-bold px-1">Select Promote Type</p>
         {TYPES.map(t => (
           <button
             key={t.id}
