@@ -106,7 +106,19 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
           setUser(data.user)
           setError(null)
         } else {
-          setError(`Auth fail: ${data.error || 'unknown'}${data.message ? ' — ' + data.message : ''}`)
+          // Auto-debug: send initData to debug endpoint
+          let debugInfo = ''
+          try {
+            const dbgRes = await fetch('/api/debug/hash', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ initData })
+            })
+            const dbg = await dbgRes.json()
+            const matched = dbg?.matchedWith
+            debugInfo = `\n\n🔍 Debug:\n- initData len: ${dbg?.initDataLength}\n- Matched: ${matched || 'NONE'}\n- Tried: ${dbg?.tokenResults?.map((r: any) => r.source).join(', ')}`
+          } catch {}
+          setError(`Auth fail: ${data.error || 'unknown'}${data.message ? ' — ' + data.message : ''}${debugInfo}`)
         }
       } catch (e: any) {
         setError('Network error: ' + (e.message || ''))

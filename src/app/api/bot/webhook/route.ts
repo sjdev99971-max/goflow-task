@@ -6,27 +6,25 @@ import { getSetting } from '@/lib/settings'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const TASK_TYPES: Record<string, string> = {
-  join_chat: '📢 Join Chat',
-  bot: '🤖 Massage Bot',
-  view_post: '📄 View Post',
-  micro: '🧑‍💻 Micro Task',
-  x: '🚀 Follow X',
-  tiktok: '🚨 TikTok',
-  youtube: '🖇️ Youtube',
-  instagram: '🕐 Instagram'
-}
-
-async function getMainMenu(botUsername: string) {
-  const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://example.vercel.app'
+async function getMainMenu() {
+  const webAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://shanto13163.jahid.one'
+  const support = await getSetting('support_username')
   return {
     inline_keyboard: [
-      [{ text: '🚀 Open App', web_app: { url: `${webAppUrl}/app` } }],
-      [{ text: '💸 Earnings', web_app: { url: `${webAppUrl}/app?tab=tasks` } }],
-      [{ text: '🚀 Promote Now', web_app: { url: `${webAppUrl}/app?page=promote` } }],
-      [{ text: '👭 Refer & Earn', web_app: { url: `${webAppUrl}/app?tab=rank` } }],
-      [{ text: '📤 Withdraw', web_app: { url: `${webAppUrl}/app?page=withdraw` } }],
-      [{ text: '🖇️ 24/7 Support', url: `https://t.me/${await getSetting('support_username')}` }]
+      [{ text: '🚀 Open GoFlow App', web_app: { url: `${webAppUrl}/app` } }],
+      [
+        { text: '💸 Earn Now', web_app: { url: `${webAppUrl}/app?tab=tasks` } },
+        { text: '💰 Balance', web_app: { url: `${webAppUrl}/app?tab=wallet` } }
+      ],
+      [
+        { text: '🚀 Promote', web_app: { url: `${webAppUrl}/app?page=promote` } },
+        { text: '👭 Refer', web_app: { url: `${webAppUrl}/app?tab=rank` } }
+      ],
+      [
+        { text: '🏆 Leaderboard', web_app: { url: `${webAppUrl}/app?tab=rank` } },
+        { text: '📤 Withdraw', web_app: { url: `${webAppUrl}/app?page=withdraw` } }
+      ],
+      [{ text: '🖇️ 24/7 Support', url: `https://t.me/${support}` }]
     ]
   }
 }
@@ -37,28 +35,65 @@ async function checkJoined(channels: string[], userId: number): Promise<string |
     try {
       const res = await tg('getChatMember', { chat_id: ch, user_id: userId })
       if (!res.ok) return ch
-      const status = res.result?.status
-      if (status === 'left' || status === 'kicked') return ch
-    } catch {
-      return ch
-    }
+      const s = res.result?.status
+      if (s === 'left' || s === 'kicked') return ch
+    } catch { return ch }
   }
   return null
+}
+
+async function sendWelcome(chatId: number, firstName: string, botUsername: string) {
+  const support = await getSetting('support_username')
+  const text = `╔══════════════════════════╗
+   🦊 <b>G O F L O W   T A S K</b>
+╚══════════════════════════╝
+
+👋 Hey <b>${firstName}</b>, welcome aboard!
+
+💎 <b>About GoFlow</b>
+━━━━━━━━━━━━━━━━━━━━━━━
+🚀 Complete simple tasks
+💰 Earn real USDT instantly
+📤 Withdraw from $0.20
+🎁 Daily rewards & bonuses
+👭 Lifetime referral income
+
+⚡ <b>How it works?</b>
+━━━━━━━━━━━━━━━━━━━━━━━
+1️⃣ Tap "Open App" below
+2️⃣ Pick any task
+3️⃣ Complete → Get paid
+4️⃣ Withdraw to Binance/TON
+
+🎯 <b>Ready to earn?</b>
+Tap the button below 👇
+
+━━━━━━━━━━━━━━━━━━━━━━━
+💬 Support: @${support}
+🦊 By @DEVELOPER_JAHID_BHAI`
+
+  await tg('sendMessage', {
+    chat_id: chatId,
+    text,
+    parse_mode: 'HTML',
+    reply_markup: await getMainMenu()
+  })
 }
 
 export async function POST(req: NextRequest) {
   try {
     const update = await req.json()
 
-    // Handle message
+    // ─── Message ───
     if (update.message) {
       const msg = update.message
       const chatId = msg.chat.id
       const from = msg.from
       const text = msg.text || ''
+      const firstName = from.first_name || 'Friend'
 
+      // ═══ /start ═══
       if (text.startsWith('/start')) {
-        // Parse referral
         const parts = text.split(' ')
         let referrerTelegramId: bigint | null = null
         if (parts[1]?.startsWith('ref_')) {
@@ -68,10 +103,9 @@ export async function POST(req: NextRequest) {
           } catch { referrerTelegramId = null }
         }
 
-        // Upsert user
         const existing = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) } })
+
         if (!existing) {
-          const adminCount = await prisma.user.count({ where: { isAdmin: true } })
           let referrerId: bigint | null = null
           if (referrerTelegramId) {
             const ref = await prisma.user.findUnique({ where: { telegramId: referrerTelegramId } })
@@ -83,6 +117,7 @@ export async function POST(req: NextRequest) {
               })
             }
           }
+          const adminCount = await prisma.user.count({ where: { isAdmin: true } })
           await prisma.user.create({
             data: {
               telegramId: BigInt(from.id),
@@ -91,75 +126,86 @@ export async function POST(req: NextRequest) {
               lastName: from.last_name || null,
               languageCode: from.language_code || null,
               referrerId,
-              isAdmin: adminCount === 0
+              isAdmin: adminCount === 0,
+              isDeveloper: adminCount === 0
             }
           })
         }
 
-        // Force channels check
-        const forceStr = await getSetting('force_channels')
-        const forceChannels = forceStr.split(',').map(s => s.trim()).filter(Boolean)
+        const me = await tg('getMe')
+        const botUsername = me?.result?.username || 'goflowtask_bot'
 
-        const notJoined = await checkJoined(forceChannels, from.id)
-        if (notJoined && forceChannels.length) {
-          const kb = {
-            inline_keyboard: [
-              ...forceChannels.map(ch => ([{
-                text: `📢 Join ${ch}`,
-                url: ch.startsWith('-') ? `https://t.me/c/${ch.replace('-100', '')}` : `https://t.me/${ch.replace('@', '')}`
-              }])),
-              [{ text: '✅ Verify', callback_data: 'verify_join' }]
-            ]
-          }
-          await tg('sendMessage', {
-            chat_id: chatId,
-            text: '⚠️ <b>Menu Locked!</b>\n\nনিচের সব চ্যানেল/গ্রুপে জয়েন করে Verify চাপুন।',
-            parse_mode: 'HTML',
-            reply_markup: kb
-          })
-          return NextResponse.json({ ok: true })
-        }
+        await sendWelcome(chatId, firstName, botUsername)
+        return NextResponse.json({ ok: true })
+      }
 
-        const botUsername = (await tg('getMe')).result?.username || ''
-        const welcome = await getSetting('welcome_text')
+      // ═══ /app ═══
+      if (text === '/app' || text === '/menu' || text === '/play') {
+        const me = await tg('getMe')
         await tg('sendMessage', {
           chat_id: chatId,
-          text: welcome,
+          text: `🚀 <b>Ready to earn, ${firstName}?</b>\n\nTap below to open the app 👇`,
           parse_mode: 'HTML',
-          reply_markup: await getMainMenu(botUsername)
+          reply_markup: await getMainMenu()
         })
+        return NextResponse.json({ ok: true })
       }
+
+      // ═══ /balance ═══
+      if (text === '/balance') {
+        const user = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) } })
+        const balance = user?.mainBalance || 0
+        const earned = user?.totalEarned || 0
+        await tg('sendMessage', {
+          chat_id: chatId,
+          text: `💰 <b>Your Balance</b>\n\n💵 Main: <b>$${balance.toFixed(4)}</b>\n📊 Total Earned: <b>$${earned.toFixed(4)}</b>\n\nOpen app to see more 👇`,
+          parse_mode: 'HTML',
+          reply_markup: await getMainMenu()
+        })
+        return NextResponse.json({ ok: true })
+      }
+
+      // ═══ /refer ═══
+      if (text === '/refer') {
+        const me = await tg('getMe')
+        const botUsername = me?.result?.username || 'goflowtask_bot'
+        const link = `https://t.me/${botUsername}?start=ref_${from.id}`
+        const user = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) } })
+        await tg('sendMessage', {
+          chat_id: chatId,
+          text: `👭 <b>Refer & Earn</b>\n\n🔗 Your link:\n<code>${link}</code>\n\n👥 Referrals: <b>${user?.totalReferrals || 0}</b>\n💰 Commission: <b>10% lifetime</b>\n\nShare & earn forever! 🚀`,
+          parse_mode: 'HTML',
+          reply_markup: await getMainMenu()
+        })
+        return NextResponse.json({ ok: true })
+      }
+
+      // ═══ /help ═══
+      if (text === '/help' || text === '/support') {
+        const support = await getSetting('support_username')
+        await tg('sendMessage', {
+          chat_id: chatId,
+          text: `🖇️ <b>Need Help?</b>\n\nContact: @${support}\n\nWe reply 24/7 ✅`,
+          parse_mode: 'HTML',
+          reply_markup: await getMainMenu()
+        })
+        return NextResponse.json({ ok: true })
+      }
+
+      // ═══ Any other text → auto welcome ═══
+      await sendWelcome(chatId, firstName, 'goflowtask_bot')
+      return NextResponse.json({ ok: true })
     }
 
-    // Handle callback queries
+    // ─── Callback ───
     if (update.callback_query) {
       const cb = update.callback_query
-      const chatId = cb.message.chat.id
-      const fromId = cb.from.id
-
       if (cb.data === 'verify_join') {
-        const forceStr = await getSetting('force_channels')
-        const forceChannels = forceStr.split(',').map(s => s.trim()).filter(Boolean)
-        const notJoined = await checkJoined(forceChannels, fromId)
-
-        if (notJoined) {
-          await tg('answerCallbackQuery', {
-            callback_query_id: cb.id,
-            text: '❌ এখনো সব চ্যানেলে জয়েন করা হয়নি!',
-            show_alert: true
-          })
-        } else {
-          await tg('answerCallbackQuery', { callback_query_id: cb.id, text: '✅ Verified!' })
-          const botUsername = (await tg('getMe')).result?.username || ''
-          await tg('editMessageText', {
-            chat_id: chatId,
-            message_id: cb.message.message_id,
-            text: '✅ Verification Successful!\n\n🚀 এখন App ওপেন করে কাজ শুরু করুন।',
-            parse_mode: 'HTML',
-            reply_markup: await getMainMenu(botUsername)
-          })
-        }
+        await tg('answerCallbackQuery', { callback_query_id: cb.id, text: '✅ Verified!' })
+      } else {
+        await tg('answerCallbackQuery', { callback_query_id: cb.id })
       }
+      return NextResponse.json({ ok: true })
     }
 
     return NextResponse.json({ ok: true })
@@ -170,5 +216,5 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'webhook active' })
+  return NextResponse.json({ status: 'webhook active', time: new Date().toISOString() })
 }
