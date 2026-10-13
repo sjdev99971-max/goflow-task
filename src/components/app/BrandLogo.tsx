@@ -1,7 +1,5 @@
-import React from 'react'
-
 'use client'
-
+import React from 'react'
 const LOGOS: Record<string, { bg: string; content: React.ReactNode }> = {
   telegram: {
     bg: 'linear-gradient(135deg, #0088cc 0%, #00a8e8 100%)',
