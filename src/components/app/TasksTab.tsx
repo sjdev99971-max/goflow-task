@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Search, ChevronDown, ArrowLeft, CheckCircle2, Clock } from 'lucide-react'
 import { cn, fmtMoney } from '@/lib/utils'
-import { TaskSkeleton, Shimmer } from '@/components/ui/Loading'
+import { TaskSkeleton, Shimmer, Spinner } from '@/components/ui/Loading'
 import BrandLogo from './BrandLogo'
 
 const CATEGORIES = [
@@ -163,6 +163,9 @@ function TaskDetail({ task, initData, onBack, setPage }: any) {
   const [accounts, setAccounts] = useState<any[]>([])
   const reward = +(task.reward * (1 - (task.adminCut || 0) / 100)).toFixed(4)
 
+  const isAuto = task.verifyType === 'auto' || ['join_chat', 'bot', 'group'].includes(task.type)
+  const isTelegram = task.link?.startsWith('@') || task.link?.includes('t.me/') || task.link?.startsWith('-100')
+
   useEffect(() => {
     fetch('/api/user/accounts', { headers: { 'x-init-data': initData } })
       .then(r => r.json()).then(d => d.ok && setAccounts(d.accounts || []))
@@ -178,36 +181,50 @@ function TaskDetail({ task, initData, onBack, setPage }: any) {
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
-    if (f.size > 2 * 1024 * 1024) { setMsg('❌ Max 2MB image'); return }
+    if (f.size > 2 * 1024 * 1024) { setMsg('❌ Max 2MB'); return }
     const reader = new FileReader()
     reader.onload = () => setImgData(reader.result as string)
     reader.readAsDataURL(f)
   }
 
-  const isAuto = task.verifyType === 'auto' || ['join_chat', 'bot', 'group'].includes(task.type)
-
   const submit = async () => {
-    // Auto task — proof লাগবে না
+    // ✅ AUTO — no proof check
     if (!isAuto) {
-      const finalProof = imgData ? `[img]${imgData.substring(0, 200)}` : proof
-      if (!finalProof.trim()) { setMsg('❌ Proof বা screenshot দিন'); return }
+      if (!proof.trim() && !imgData) {
+        setMsg('❌ Screenshot বা username দিন')
+        return
+      }
     }
+
     setBusy(true); setMsg('')
-    const res = await fetch('/api/user/proof', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-init-data': initData },
-      body: JSON.stringify({
-        taskId: task.id,
-        proof: imgData ? `[img]${imgData.substring(0, 200)}` : proof,
-        image: imgData
+    try {
+      const res = await fetch('/api/user/proof', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-init-data': initData },
+        body: JSON.stringify({
+          taskId: task.id,
+          proof: proof || '',
+          image: imgData || null
+        })
       })
-    })
-    const d = await res.json()
+      const d = await res.json()
+
+      if (d.ok) {
+        if (d.autoApproved) {
+          setMsg(`✅ Auto-verified! +$${d.reward} added`)
+        } else if (d.escalated) {
+          setMsg(`⚠️ Admin manually verify করবেন`)
+        } else {
+          setMsg(`✅ Submitted! Admin approve করলে credit পাবেন।`)
+        }
+        setProof(''); setImgData(null)
+      } else {
+        setMsg('❌ ' + (d.message || d.error || 'Failed'))
+      }
+    } catch (e: any) {
+      setMsg('❌ Network error: ' + e.message)
+    }
     setBusy(false)
-    if (d.ok) {
-      setMsg(d.autoApproved ? `✅ Auto-verified! +$${d.reward}` : '✅ Submitted! Admin approve করলে credit পাবেন।')
-      setProof(''); setImgData(null)
-    } else setMsg('❌ ' + (d.error || d.message || 'Failed'))
   }
 
   return (
@@ -235,19 +252,31 @@ function TaskDetail({ task, initData, onBack, setPage }: any) {
           🔗 Open Task Link
         </a>
 
-        <div className="mt-4 pt-4 border-t border-line">
-          {task.verifyType === 'auto' ? (
-            <div className="text-center space-y-2">
-              <p className="text-xs text-muted">Auto verification — Link খুলে Verify চাপুন</p>
-              <button onClick={submit} disabled={busy} className="btn btn-brand w-full">
-                {busy ? 'Checking...' : '✅ Verify Now'}
-              </button>
-            </div>
-          ) : (
+        <div className="mt-4 pt-4 border-t border-line space-y-3">
+          {/* AUTO VERIFY FLOW */}
+          {isAuto && (
             <>
-              {/* Link Account Suggestion */}
+              <div className="bg-brand/10 border border-brand/30 rounded-xl p-3 text-center">
+                <p className="text-[11px] text-txt-soft">
+                  ⚡ Auto verification — Link খুলে join করে <b>Verify</b> চাপুন
+                </p>
+                {!isTelegram && (
+                  <p className="text-[10px] text-gold mt-1">
+                    ⚠️ Link Telegram নয় — admin manually verify করবেন
+                  </p>
+                )}
+              </div>
+              <button onClick={submit} disabled={busy} className="btn btn-brand w-full flex items-center justify-center gap-2">
+                {busy ? <><Spinner size={14} /> Verifying...</> : '✅ Verify Now'}
+              </button>
+            </>
+          )}
+
+          {/* MANUAL VERIFY FLOW */}
+          {!isAuto && (
+            <>
               {needPlatform && (
-                <div className={suggested ? 'bg-green/10 border border-green/30 rounded-xl p-3 mb-3' : 'bg-brand/10 border border-brand/30 rounded-xl p-3 mb-3'}>
+                <div className={suggested ? 'bg-green/10 border border-green/30 rounded-xl p-3' : 'bg-brand/10 border border-brand/30 rounded-xl p-3'}>
                   {suggested ? (
                     <>
                       <p className="text-[10px] text-green font-bold mb-1">✨ Saved {needPlatform} account</p>
@@ -260,7 +289,6 @@ function TaskDetail({ task, initData, onBack, setPage }: any) {
                   ) : (
                     <>
                       <p className="text-[10px] text-brand font-bold mb-1">💡 {needPlatform} account save করুন</p>
-                      <p className="text-[10px] text-txt-soft mb-2">একবার save করলে বার বার type করতে হবে না</p>
                       <button onClick={() => setPage && setPage('accounts')}
                         className="text-[10px] bg-brand text-white px-3 py-1.5 rounded-lg font-bold">
                         → Add Account
@@ -270,43 +298,46 @@ function TaskDetail({ task, initData, onBack, setPage }: any) {
                 </div>
               )}
 
-              <label className="text-xs text-muted font-bold">📸 Proof (Screenshot বা Username)</label>
+              <p className="text-xs text-muted font-bold">📸 Proof (Screenshot বা Username)</p>
 
-              {/* File upload */}
-              <div className="mt-2 space-y-2">
-                <label className="block bg-bg-soft border-2 border-dashed border-line rounded-xl p-4 text-center active:scale-98 transition cursor-pointer">
-                  <input type="file" accept="image/*" onChange={onFile} className="hidden" />
-                  {imgData ? (
-                    <div>
-                      <img src={imgData} alt="preview" className="max-h-32 mx-auto rounded-lg mb-2" />
-                      <p className="text-[10px] text-green font-bold">✅ Image ready</p>
-                      <p className="text-[10px] text-muted">Tap to change</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-2xl mb-1">📷</p>
-                      <p className="text-xs font-bold text-brand">Upload Screenshot</p>
-                      <p className="text-[10px] text-muted mt-1">Max 2MB · JPG/PNG</p>
-                    </div>
-                  )}
-                </label>
+              {/* Screenshot Upload */}
+              <label className="block bg-bg-soft border-2 border-dashed border-line rounded-xl p-4 text-center active:scale-98 transition cursor-pointer">
+                <input type="file" accept="image/*" onChange={onFile} className="hidden" />
+                {imgData ? (
+                  <div>
+                    <img src={imgData} alt="preview" className="max-h-32 mx-auto rounded-lg mb-2" />
+                    <p className="text-[10px] text-green font-bold">✅ Image ready</p>
+                    <p className="text-[10px] text-muted mt-0.5">Tap to change</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-2xl mb-1">📷</p>
+                    <p className="text-xs font-bold text-brand">Upload Screenshot</p>
+                    <p className="text-[10px] text-muted mt-1">Max 2MB · JPG/PNG</p>
+                  </div>
+                )}
+              </label>
 
-                <p className="text-[10px] text-muted text-center">— OR paste username/link —</p>
+              <p className="text-[10px] text-muted text-center">— OR paste username —</p>
 
-                <input
-                  value={proof}
-                  onChange={e => setProof(e.target.value)}
-                  placeholder="e.g. @yourhandle"
-                  className="w-full bg-bg-soft border border-line rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand"
-                />
-              </div>
+              <input
+                value={proof}
+                onChange={e => setProof(e.target.value)}
+                placeholder="e.g. @yourhandle"
+                className="w-full bg-bg-soft border border-line rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand"
+              />
 
-              <button onClick={submit} disabled={busy || (!proof && !imgData)} className="btn btn-brand w-full mt-3 disabled:opacity-50">
-                {busy ? 'Submitting...' : '📤 Submit Proof'}
+              <button onClick={submit} disabled={busy} className="btn btn-brand w-full flex items-center justify-center gap-2">
+                {busy ? <><Spinner size={14} /> Submitting...</> : '📤 Submit Proof'}
               </button>
             </>
           )}
-          {msg && <p className="text-xs text-center mt-2 font-semibold">{msg}</p>}
+
+          {msg && (
+            <p className={`text-xs text-center font-bold ${msg.startsWith('✅') ? 'text-green' : msg.startsWith('⚠️') ? 'text-gold' : 'text-red'}`}>
+              {msg}
+            </p>
+          )}
         </div>
       </div>
     </div>

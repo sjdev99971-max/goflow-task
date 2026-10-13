@@ -198,13 +198,34 @@ function SubsTab({ initData }: any) {
               </div>
 
               <div className="bg-bg-soft rounded-xl p-3 space-y-1.5">
-                <p className="text-xs font-bold">{s.task?.title}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold flex-1">{s.task?.title}</p>
+                  {s.escalated && (
+                    <span className="text-[9px] bg-gold/20 text-gold px-2 py-0.5 rounded-full font-bold">⚠️ ESCALATED</span>
+                  )}
+                </div>
                 <p className="text-[10px] text-muted capitalize">
                   {s.task?.type?.replace('_', ' ')} • {new Date(s.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </p>
                 <div className="pt-2 border-t border-line">
-                  <p className="text-[10px] text-muted mb-1">📎 Proof:</p>
-                  <p className="text-xs font-mono break-all bg-bg rounded-lg p-2">{s.proof || '(empty)'}</p>
+                  <p className="text-[10px] text-muted mb-1">📎 Proof / Reason:</p>
+                  {s.proof?.startsWith('[IMG]') || s.proof?.includes('[IMG]') ? (
+                    <div className="space-y-2">
+                      {s.proof.includes('[IMG]') && (
+                        <img
+                          src={s.proof.substring(s.proof.indexOf('[IMG]') + 5)}
+                          alt="proof"
+                          className="max-h-40 rounded-lg mx-auto"
+                          onError={(e: any) => { e.target.style.display = 'none' }}
+                        />
+                      )}
+                      <p className="text-[10px] font-mono break-all bg-bg rounded-lg p-2 text-muted">
+                        {s.proof.replace(/\[IMG\].*/, '[image attached above]').substring(0, 200)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs font-mono break-all bg-bg rounded-lg p-2">{s.proof || '(empty)'}</p>
+                  )}
                 </div>
               </div>
 
