@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { cn, fmtMoney } from '@/lib/utils'
 import { Shimmer, ListSkeleton } from '@/components/ui/Loading'
+import ChannelVerifier from '@/components/admin/ChannelVerifier'
 
 export default function AdminPage() {
   return (
